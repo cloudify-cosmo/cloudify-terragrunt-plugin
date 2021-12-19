@@ -46,6 +46,14 @@ data_types:
 
   cloudify.types.terragrunt.Stack:
     properties:
+      binary_path:
+        type: string
+        description: The path to the Terragrunt binary on your system. This may also be provided through a relationship to a cloudify.nodes.Terragrunt node template.
+        default: ''
+      terraform_binary_path:
+        type: string
+        description: The path to the Terraform binary on your system. This may also be provided through a relationship to a cloudify.nodes.terraform node template.
+        default: ''
       source:
         type: cloudify.types.terragrunt.SourceSpecification
         description: Specification of Terragrunt Stack archive's source.
@@ -64,7 +72,7 @@ data_types:
         default: {}
       run_all:
         type: boolean
-        description: run all executes commands such as plan, apply, destroy, output in all modules in a stack. False will execute terragrunt as a terraform wrapper.
+        description: run all executes commands such as plan, apply, destroy, output in all modules in a stack.
         default: false
       command_options:
         type: dict

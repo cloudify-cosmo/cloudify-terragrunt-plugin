@@ -120,10 +120,12 @@ node_types:
               max_sleep_time: 300
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
-          implementation: tg.cloudify_tg.tasks.apply
+        precreate:
+          implementation: tg.cloudify_tg.tasks.precreate
+        create:
+          implementation: tg.cloudify_tg.tasks.create
         delete:
-          implementation: tg.cloudify_tg.tasks.destroy
+          implementation: tg.cloudify_tg.tasks.delete
       terragrunt:
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command

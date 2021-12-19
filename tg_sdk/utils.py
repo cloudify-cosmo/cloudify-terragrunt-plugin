@@ -13,6 +13,8 @@ def get_logger(logger_name=None):
 def basic_executor(command, *args, **kwargs):
     if isinstance(command, str):
         command = command.split(' ')
+    if 'logger' in kwargs:
+        kwargs.pop('logger')
     try:
         result = check_output(command, *args, **kwargs)
     except CalledProcessError as e:

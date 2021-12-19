@@ -5,7 +5,12 @@ from . import utils
 
 class Terragrunt(object):
 
-    def __init__(self, properties, logger=None, executor=None, *args, **kwargs):
+    def __init__(self,
+                 properties,
+                 logger=None,
+                 executor=None,
+                 *args,
+                 **kwargs):
         self._properties = properties
         self.logger = logger or utils.get_logger('TerragruntLogger')
         self._additional_args = args
@@ -88,7 +93,7 @@ class Terragrunt(object):
 
     def _execute(self, command):
         args = [command]
-        kwargs = {}
+        kwargs = {'logger': self.logger}
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:

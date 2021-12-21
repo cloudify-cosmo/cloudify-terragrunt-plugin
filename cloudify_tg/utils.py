@@ -1,15 +1,13 @@
 import os
-import sys
 from copy import deepcopy
-from functools import wraps
+from shutil import rmtree
 
 from cloudify import ctx as ctx_from_imports
 from cloudify_common_sdk import (
     get_ctx_node,
     get_ctx_instance,
-    get_deployment_dir)
-from cloudify.exceptions import NonRecoverableError
-from cloudify.utils import exception_to_error_cause
+    get_deployment_dir,
+    get_shared_resource)
 from cloudify_common_sdk.processes import general_executor, process_execution
 
 from tg_sdk import Terragrunt
@@ -17,21 +15,6 @@ from tg_sdk import Terragrunt
 
 # SHOULD_BE_USER_PROVIDED
 MASKED_ENV_VARS = {}
-
-
-def with_terragrunt(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        ctx = kwargs.get('ctx') or ctx_from_imports
-        kwargs['tg'] = terragrunt_from_ctx(ctx)
-        try:
-            func(*args, **kwargs)
-        except Exception as ex:
-            _, _, tb = sys.exc_info()
-            raise NonRecoverableError(
-                "Failed applying",
-                causes=[exception_to_error_cause(ex, tb)])
-    return wrapper
 
 
 def terragrunt_from_ctx(ctx):
@@ -118,6 +101,51 @@ def get_node_instance_dir(target=False, source=False, source_path=None):
     ctx_from_imports.logger.debug('Value deployment_dir is {loc}.'.format(
         loc=folder))
     return folder
+
+
+def download_terragrunt_source(source):
+    """Replace the terraform_source material with a new material.
+    This is used in terraform.reload_template operation."""
+    ctx_from_imports.logger.info(
+        'Using this cloudify.types.terragrunt.SourceSpecification '
+        '{source}.'.format(source=source))
+    node_instance_dir = get_node_instance_dir()
+    if isinstance(source, dict):
+        ctx_from_imports.logger.info('Downloading {source} to {dest}.'.format(
+            source=source, dest=node_instance_dir))
+        source_tmp_path = get_shared_resource(
+            source, dir=node_instance_dir,
+            username=source.get('username'),
+            password=source.get('password'))
+        ctx_from_imports.logger.info('Temporary Terragrunt source {}'.format(
+            source_tmp_path))
+        copy_directory(source_tmp_path, node_instance_dir)
+        remove_directory(source_tmp_path)
+
+
+def cleanup_old_terragrunt_source():
+    node_instance_dir = get_node_instance_dir()
+    paths_to_delete = []
+    for files in os.listdir(node_instance_dir):
+        path = os.path.join(node_instance_dir, files)
+        paths_to_delete.append(path)
+    ctx_from_imports.logger.info('Deleting these paths {}.'.format(
+        paths_to_delete))
+    for path in paths_to_delete:
+        try:
+            rmtree(path)
+        except OSError:
+            os.remove(path)
+
+
+# Merge with TF Plugin
+def copy_directory(src, dst):
+    run(['cp', '-r', os.path.join(src, '*'), dst])
+
+
+# Merge with TF Plugin
+def remove_directory(dir):
+    run(['rm', '-rf', dir])
 
 
 # Merge with TF Plugin

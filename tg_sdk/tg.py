@@ -104,6 +104,7 @@ class Terragrunt(object):
         command = [self.binary_path, name]
         if self.run_all:
             command.insert(1, 'run-all')
+        command.extend(self.command_options.get('all', []))
         command.extend(self.command_options.get(name, []))
         if 'terragrunt-tfpath' not in command and self.terraform_binary_path:
             command.extend(['--terragrunt-tfpath', self.terraform_binary_path])

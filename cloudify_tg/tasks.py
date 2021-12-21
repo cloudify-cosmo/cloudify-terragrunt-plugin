@@ -1,9 +1,9 @@
 from cloudify.decorators import operation
 
-from .utils import with_terragrunt
+from . import utils, decorators
 
 @operation
-@with_terragrunt
+@decorators.with_terragrunt
 def precreate(tg, **_):
     tg.terragrunt_info()
     tg.graph_dependencies()
@@ -12,18 +12,23 @@ def precreate(tg, **_):
 
 
 @operation
-@with_terragrunt
+@decorators.with_terragrunt
 def create(tg, **_):
     tg.apply()
 
 
 @operation
-@with_terragrunt
+@decorators.with_terragrunt
 def poststart(tg, **_):
     tg.outputs()
 
 
 @operation
-@with_terragrunt
+@decorators.with_terragrunt
 def delete(tg, **_):
     tg.destroy()
+
+
+def update_terragrunt_source(new_source):
+    utils.cleanup_old_terragrunt_source()
+    utils.download_terragrunt_source(new_source)

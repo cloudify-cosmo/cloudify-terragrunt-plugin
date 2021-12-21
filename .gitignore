@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 test-template/*
+getting_started_template/*

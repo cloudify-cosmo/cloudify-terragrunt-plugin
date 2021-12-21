@@ -15,6 +15,10 @@ def basic_executor(command, *args, **kwargs):
         command = command.split(' ')
     if 'logger' in kwargs:
         kwargs.pop('logger')
+        logger = logging.getLogger('foobar')
+        stdout = StreamToLogger(logger, logging.INFO)
+        stderr = StreamToLogger(logger, logging.ERROR)
+
     try:
         result = check_output(command, *args, **kwargs)
     except CalledProcessError as e:
@@ -45,3 +49,20 @@ def yield_file(content):
         f.write(content)
         f.flush()
         yield f.name
+
+
+class StreamToLogger(object):
+    """
+    Fake file-like stream object that redirects writes to a logger instance.
+    """
+    def __init__(self, logger, level):
+       self.logger = logger
+       self.level = level
+       self.linebuf = ''
+
+    def write(self, buf):
+       for line in buf.rstrip().splitlines():
+          self.logger.log(self.level, line.rstrip())
+
+    def flush(self):
+        pass

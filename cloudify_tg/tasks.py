@@ -27,8 +27,3 @@ def poststart(tg, **_):
 @decorators.with_terragrunt
 def delete(tg, **_):
     tg.destroy()
-
-
-def update_terragrunt_source(new_source):
-    utils.cleanup_old_terragrunt_source()
-    utils.download_terragrunt_source(new_source)

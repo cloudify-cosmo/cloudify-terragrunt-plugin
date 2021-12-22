@@ -1,8 +1,10 @@
 import re
 import logging
-from subprocess import check_output, CalledProcessError
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+from subprocess import check_output, CalledProcessError
+
+from cloudify_common_sdk.utils import get_shared_resource
 
 
 def get_logger(logger_name=None):
@@ -41,6 +43,24 @@ def get_version_string(output):
     result = re.search(r'([\d.]+)', output)
     if result:
         return result.group(1)
+
+
+def download_source(source, target_directory, logger):
+    logger.debug('Downloading {source} to {dest}.'.format(
+        source=source, dest=target_directory))
+    if isinstance(source, dict):
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory,
+            username=source.get('username'),
+            password=source.get('password'))
+    else:
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory,
+            username=source.get('username'),
+            password=source.get('password'))
+    logger.debug('Downloaded temporary source path {}'.format(source_tmp_path))
+    # Plugins must delete this.
+    return source_tmp_path
 
 
 @contextmanager

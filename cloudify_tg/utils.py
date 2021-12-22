@@ -3,30 +3,48 @@ from copy import deepcopy
 from shutil import rmtree
 
 from cloudify import ctx as ctx_from_imports
-from cloudify_common_sdk import (
+from cloudify_common_sdk.utils import (
     get_ctx_node,
     get_ctx_instance,
     get_deployment_dir,
     get_shared_resource)
 from cloudify_common_sdk.processes import general_executor, process_execution
 
-from tg_sdk import Terragrunt
+from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
 
 # SHOULD_BE_USER_PROVIDED
 MASKED_ENV_VARS = {}
 
 
-def terragrunt_from_ctx(ctx):
-    ctx_node = get_ctx_node()
-    ctx_instance = get_ctx_instance()
-    return Terragrunt(
+def configure_ctx(ctx_instance, ctx_node, resource_config=None):
+    if 'resource_config' not in ctx_instance.runtime_properties:
+        ctx_instance.runtime_properties['resource_config'] = \
+            resource_config or  ctx_node.properties['resource_config']
+    return ctx_instance.runtime_properties['resource_config']
+
+
+def terragrunt_from_ctx(kwargs):
+    _ctx = kwargs.get('ctx')
+    ctx_node = get_ctx_node(_ctx)
+    ctx_instance = get_ctx_instance(_ctx)
+    ctx = _ctx or ctx_from_imports
+    configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
+    tg = Terragrunt(
         ctx_node,
         logger=ctx.logger,
         executor=run,
         cwd=get_deployment_dir(ctx.deployment.id),
-        **ctx_instance.runtime_properties.get('resource_config', {})
+        **ctx_instance.runtime_properties['resource_config']
     )
+    update_source = kwargs.get('update_source', False)
+    if update_source:
+        cleanup_old_terragrunt_source()
+    # Maybe we want to update it if it already exists.
+    # Maybe we need to download a new source.
+    with tg.update_source_path(update_source) as source:
+        download_terragrunt_source(source)
+    return tg
 
 
 def run(command,
@@ -83,26 +101,6 @@ def run(command,
         general_executor_params)
 
 
-# Merge with TF Plugin
-def get_node_instance_dir(target=False, source=False, source_path=None):
-    """This is the place where the magic happens.
-    We put all our binaries, templates, or symlinks to those files here,
-    and then we also run all executions from here.
-    """
-    instance = get_ctx_instance(target=target, source=source)
-    folder = os.path.join(
-        get_deployment_dir(ctx_from_imports.deployment.id),
-        instance.id
-    )
-    if source_path:
-        folder = os.path.join(folder, source_path)
-    if not os.path.exists(folder):
-        mkdir_p(folder)
-    ctx_from_imports.logger.debug('Value deployment_dir is {loc}.'.format(
-        loc=folder))
-    return folder
-
-
 def download_terragrunt_source(source):
     """Replace the terraform_source material with a new material.
     This is used in terraform.reload_template operation."""
@@ -110,17 +108,30 @@ def download_terragrunt_source(source):
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
     node_instance_dir = get_node_instance_dir()
-    if isinstance(source, dict):
-        ctx_from_imports.logger.info('Downloading {source} to {dest}.'.format(
-            source=source, dest=node_instance_dir))
-        source_tmp_path = get_shared_resource(
-            source, dir=node_instance_dir,
-            username=source.get('username'),
-            password=source.get('password'))
-        ctx_from_imports.logger.info('Temporary Terragrunt source {}'.format(
-            source_tmp_path))
-        copy_directory(source_tmp_path, node_instance_dir)
-        remove_directory(source_tmp_path)
+    source_tmp_path = tg_sdk_utils.download_source(
+        source, node_instance_dir, ctx_from_imports.logger)
+    copy_directory(source_tmp_path, node_instance_dir)
+    remove_directory(source_tmp_path)
+
+
+def get_terragrunt_source_config(new_source_config=False):
+    """Source config can be either
+    { 'location': URL, 'username': 'foo'', 'password': 'bar'} or URL.
+    It should be in the node properties or in the runtime properties
+
+
+    :param new_source_config: a string or a dict or None
+    :return:
+    """
+    ctx_instance = get_ctx_instance()
+    if new_source_config:
+        ctx_instance.runtime_properties['resource_config']['source'] = \
+            new_source_config
+    instance_props = ctx_instance.runtime_properties.get('resource_config', {})
+    if 'source' in instance_props:
+        return instance_props['source']
+    node_props = get_ctx_node().properties['resource_config']
+    return node_props['source']
 
 
 def cleanup_old_terragrunt_source():
@@ -152,3 +163,17 @@ def remove_directory(dir):
 def mkdir_p(path):
     import pathlib
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+
+
+# Merge with TF Plugin
+def get_node_instance_dir():
+    instance = get_ctx_instance()
+    folder = os.path.join(
+        get_deployment_dir(ctx_from_imports.deployment.id),
+        instance.id
+    )
+    if not os.path.exists(folder):
+        mkdir_p(folder)
+    ctx_from_imports.logger.debug(
+        'Value node_instance_dir is {folder}.'.format(folder=folder))
+    return folder

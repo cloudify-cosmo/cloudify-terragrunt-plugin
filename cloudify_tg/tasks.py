@@ -28,3 +28,16 @@ def poststart(tg, **_):
 @decorators.with_terragrunt
 def delete(tg, **_):
     tg.destroy()
+
+
+@operation
+@decorators.with_terragrunt
+def graph_dependencies(tg, **_):
+    tg.graph_dependencies()
+
+
+@operation
+@decorators.with_terragrunt
+def run_command(command, command_options, tg, *args, **kwargs):
+    tg.update_command_options({command: command_options})
+    tg.execute(command)

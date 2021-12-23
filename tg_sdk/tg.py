@@ -21,6 +21,7 @@ class Terragrunt(object):
         self._source = None
         self._source_path = None
         self._binary_path = None
+        self._command_options = None
         self.executor = executor or utils.basic_executor
         self.cwd = kwargs.get('cwd')
         self._terraform_plan = None
@@ -106,7 +107,12 @@ class Terragrunt(object):
 
     @property
     def command_options(self):
+        if self._command_options:
+            return self._command_options
         return self.resource_config.get('command_options', {})
+
+    def update_command_options(self, new_dict):
+        self._command_options.update(new_dict)
 
     @property
     def version(self):

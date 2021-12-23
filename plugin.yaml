@@ -7,24 +7,6 @@ plugins:
 
 data_types:
 
-  cloudify.types.terragrunt.DirectoryConfig:
-    properties:
-      executable_path:
-        type: string
-        description: The path to the terragrunt binary executable.
-        required: false
-
-  cloudify.types.terragrunt.InstallConfig:
-    properties:
-      use_existing_resource:
-        type: boolean
-        description: If true, use an existing Terraform installation rather than installing it
-        default: false
-      installation_source:
-        type: string
-        default: 'https://releases.hashicorp.com/terragrunt/0.13.3/terragrunt_0.13.3_linux_amd64.zip'
-        description: Location to download the Terraform executable binary from. Ignored if 'use_existing' is true.
-
   cloudify.types.terragrunt.SourceSpecification:
     properties:
       location:
@@ -49,11 +31,11 @@ data_types:
       binary_path:
         type: string
         description: The path to the Terragrunt binary on your system. This may also be provided through a relationship to a cloudify.nodes.Terragrunt node template.
-        default: ''
+        default: '/usr/local/bin/terragrunt'
       terraform_binary_path:
         type: string
         description: The path to the Terraform binary on your system. This may also be provided through a relationship to a cloudify.nodes.terraform node template.
-        default: ''
+        default: '/usr/local/bin/terraform'
       source:
         type: cloudify.types.terragrunt.SourceSpecification
         description: Specification of Terragrunt Stack archive's source.
@@ -81,26 +63,14 @@ data_types:
           For example, if you want different log level for apply and destroy, the you can provide this dict:
           apply: '["--terragrunt-log-level", "info"]'
           destroy: '["--terragrunt-log-level", "debug"]'
+        default:
+          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug"]
+          apply: ["-auto-approve"]
+          destroy: ["-auto-approve"]
+          plan: ["-json"]
+          output: ["-json"]
 
 node_types:
-
-  # Represents the installation of Terragrunt
-  cloudify.nodes.terragrunt:
-    derived_from: cloudify.nodes.SoftwareComponent
-    properties:
-      terragrunt_config:
-        type: cloudify.types.terragrunt.DirectoryConfig
-        description: Terraform directories for executions.
-        required: false
-      resource_config:
-        type: cloudify.types.terragrunt.InstallConfig
-        required: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: tg.cloudify_tg.tasks.install
-        delete:
-          implementation: tg.cloudify_tg.tasks.uninstall
 
   # Represents a Terragrunt Stack.
   cloudify.nodes.terragrunt.Stack:
@@ -109,92 +79,85 @@ node_types:
       resource_config:
         type: cloudify.types.terragrunt.Stack
         required: true
-      plugin_config:
-        type: dict
-        description: Various plugin level configurations, for example the max sleep time for the general_executor_process.
-        default:
-          general_executor_process:
-            type: dict
-            description: Additional keyword args to send the the general executor process argument.
-            default:
-              max_sleep_time: 300
     interfaces:
       cloudify.interfaces.lifecycle:
         precreate:
           implementation: tg.cloudify_tg.tasks.precreate
         create:
           implementation: tg.cloudify_tg.tasks.create
+        poststart:
+          implementation: tg.cloudify_tg.tasks.poststart
         delete:
           implementation: tg.cloudify_tg.tasks.delete
-      terragrunt:
-        run_command:
-          implementation: tg.cloudify_tg.tasks.run_command
-          inputs:
-            command:
-              type: string
-              description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
-            options: &terragrunt_command_options
-              type: list
-              description: |
-                A list of options to extend the command list.
-                For example, if you wish to run "terragrunt apply --terragrunt-debug --terragrunt-override-attr foo=bar",
-                then the options input is: '["--terragrunt-debug", "--terragrunt-override-attr", "foo=bar"]'
-        terragrunt_plan:
-          implementation: tg.cloudify_tg.tasks.terragrunt_plan
-          inputs:
-            <<: terragrunt_command_options
-        terragrunt_destroy:
-          implementation: tg.cloudify_tg.tasks.terragrunt_destroy
-          inputs:
-            <<: terragrunt_command_options
-        terragrunt_output:
-          implementation: tg.cloudify_tg.tasks.terragrunt_output
-          inputs:
-            <<: terragrunt_command_options
-        terragrunt_apply:
-          implementation: tg.cloudify_tg.tasks.terragrunt_apply
-          inputs:
-            <<: terragrunt_command_options
-        terragrunt_info:
-          implementation: tg.cloudify_tg.tasks.terragrunt_info
-          inputs:
-            <<: terragrunt_command_options
-        validate_inputs:
-          implementation: tg.cloudify_tg.tasks.validate_inputs
-          inputs:
-            <<: terragrunt_command_options
-        graph_dependencies:
-          implementation: tg.cloudify_tg.tasks.graph_dependencies
-          inputs:
-            <<: terragrunt_command_options
-        render_json:
-          implementation: tg.cloudify_tg.tasks.render_json
-          inputs:
-            <<: terragrunt_command_options
-
-workflows:
-
-  Terragrunt_refresh:
-    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
-    parameters: &terragrunt_workflow_params
-      node_instance_ids:
-        type: list
-        default: []
-        description: |
-          List of node instance ID's to refresh for.
-      node_ids:
-        type: list
-        default: []
-        description: |
-          List of node templates to refresh for.
-
-  terragrunt_show:
-    mapping: tg.cloudify_tg.workflows.terragrunt_show
-    parameters:
-      <<: *terragrunt_workflow_params
-      source:
-        type: string
-        default: ''
-      source_path:
-        type: string
-        default: ''
+#      terragrunt:
+#        run_command:
+#          implementation: tg.cloudify_tg.tasks.run_command
+#          inputs:
+#            command:
+#              type: string
+#              description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
+#            options: &terragrunt_command_options
+#              type: list
+#              description: |
+#                A list of options to extend the command list.
+#                For example, if you wish to run "terragrunt apply --terragrunt-debug --terragrunt-override-attr foo=bar",
+#                then the options input is: '["--terragrunt-debug", "--terragrunt-override-attr", "foo=bar"]'
+#        terragrunt_plan:
+#          implementation: tg.cloudify_tg.tasks.terragrunt_plan
+#          inputs:
+#            <<: terragrunt_command_options
+#        terragrunt_destroy:
+#          implementation: tg.cloudify_tg.tasks.terragrunt_destroy
+#          inputs:
+#            <<: terragrunt_command_options
+#        terragrunt_output:
+#          implementation: tg.cloudify_tg.tasks.terragrunt_output
+#          inputs:
+#            <<: terragrunt_command_options
+#        terragrunt_apply:
+#          implementation: tg.cloudify_tg.tasks.terragrunt_apply
+#          inputs:
+#            <<: terragrunt_command_options
+#        terragrunt_info:
+#          implementation: tg.cloudify_tg.tasks.terragrunt_info
+#          inputs:
+#            <<: terragrunt_command_options
+#        validate_inputs:
+#          implementation: tg.cloudify_tg.tasks.validate_inputs
+#          inputs:
+#            <<: terragrunt_command_options
+#        graph_dependencies:
+#          implementation: tg.cloudify_tg.tasks.graph_dependencies
+#          inputs:
+#            <<: terragrunt_command_options
+#        render_json:
+#          implementation: tg.cloudify_tg.tasks.render_json
+#          inputs:
+#            <<: terragrunt_command_options
+#
+#workflows:
+#
+#  Terragrunt_refresh:
+#    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
+#    parameters: &terragrunt_workflow_params
+#      node_instance_ids:
+#        type: list
+#        default: []
+#        description: |
+#          List of node instance ID's to refresh for.
+#      node_ids:
+#        type: list
+#        default: []
+#        description: |
+#          List of node templates to refresh for.
+#
+#  terragrunt_show:
+#    mapping: tg.cloudify_tg.workflows.terragrunt_show
+#    parameters:
+#      <<: *terragrunt_workflow_params
+#      source:
+#        type: string
+#        default: ''
+#      source_path:
+#        type: string
+#        default: ''

@@ -1,6 +1,7 @@
 from cloudify.decorators import operation
 
-from . import utils, decorators
+from . import decorators
+
 
 @operation
 @decorators.with_terragrunt
@@ -20,7 +21,7 @@ def create(tg, **_):
 @operation
 @decorators.with_terragrunt
 def poststart(tg, **_):
-    tg.outputs()
+    tg.output()
 
 
 @operation

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 from subprocess import check_output, CalledProcessError
 
-from cloudify_common_sdk.utils import get_shared_resource
+from cloudify_common_sdk.resource_downloader import get_shared_resource
 
 
 def get_logger(logger_name=None):
@@ -17,9 +17,6 @@ def basic_executor(command, *args, **kwargs):
         command = command.split(' ')
     if 'logger' in kwargs:
         kwargs.pop('logger')
-        logger = logging.getLogger('foobar')
-        stdout = StreamToLogger(logger, logging.INFO)
-        stderr = StreamToLogger(logger, logging.ERROR)
 
     try:
         result = check_output(command, *args, **kwargs)
@@ -55,9 +52,7 @@ def download_source(source, target_directory, logger):
             password=source.get('password'))
     else:
         source_tmp_path = get_shared_resource(
-            source, dir=target_directory,
-            username=source.get('username'),
-            password=source.get('password'))
+            source, dir=target_directory)
     logger.debug('Downloaded temporary source path {}'.format(source_tmp_path))
     # Plugins must delete this.
     return source_tmp_path
@@ -69,20 +64,3 @@ def yield_file(content):
         f.write(content)
         f.flush()
         yield f.name
-
-
-class StreamToLogger(object):
-    """
-    Fake file-like stream object that redirects writes to a logger instance.
-    """
-    def __init__(self, logger, level):
-       self.logger = logger
-       self.level = level
-       self.linebuf = ''
-
-    def write(self, buf):
-       for line in buf.rstrip().splitlines():
-          self.logger.log(self.level, line.rstrip())
-
-    def flush(self):
-        pass

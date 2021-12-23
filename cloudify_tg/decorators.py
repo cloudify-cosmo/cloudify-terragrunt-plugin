@@ -18,4 +18,13 @@ def with_terragrunt(func):
             raise NonRecoverableError(
                 "Failed applying",
                 causes=[cfy_utils.exception_to_error_cause(ex, tb)])
+
+        if kwargs['tg'].terraform_plan:
+            kwargs['ctx'].instance.runtime_properties['terraform_plan'] = \
+                kwargs['tg'].terraform_plan
+
+        if kwargs['tg'].terraform_output:
+            kwargs['ctx'].instance.runtime_properties['terraform_output'] = \
+                kwargs['tg'].terraform_output
+
     return wrapper

@@ -43,6 +43,10 @@ setup(
     description='Enables Support of Terragrunt',
     packages=['cloudify_tg', 'tg_sdk'],
     license='LICENSE',
-    install_requires=[],
+    install_requires=[
+        "Pathlib",
+        "cloudify-common>=4.5.5",
+        "cloudify-utilities-plugins-sdk>=0.0.49",
+    ],
     test_requires=[]
 )

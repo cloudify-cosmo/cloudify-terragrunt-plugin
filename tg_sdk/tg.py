@@ -1,5 +1,6 @@
 import os
-from contextlib import contextmanager
+import json
+from tempfile import NamedTemporaryFile
 
 from . import utils
 
@@ -22,6 +23,8 @@ class Terragrunt(object):
         self._binary_path = None
         self.executor = executor or utils.basic_executor
         self.cwd = kwargs.get('cwd')
+        self._terraform_plan = None
+        self._terraform_output = []
 
     @property
     def properties(self):
@@ -61,9 +64,17 @@ class Terragrunt(object):
             source_path = self.resource_config.get('source_path')
             if os.path.exists(source_path):
                 self._source_path = source_path
-            elif os.path.exists(os.path.join(self.cwd, source_path)):
-                self._source_path = os.path.join(self.cwd, source_path)
         return self._source_path
+
+    @source_path.setter
+    def source_path(self, value):
+        """The local path on the manager to the expanded Terragrunt Stack
+        root directory.
+
+        :return: str
+        """
+        self._resource_config['source_path'] = value
+        self._source_path = value
 
     @property
     def binary_path(self):
@@ -102,16 +113,17 @@ class Terragrunt(object):
         return utils.get_version_string(
             self._execute([self.binary_path, '--version']))
 
-    def _execute(self, command):
+    def _execute(self, command, return_output):
         args = [command]
         kwargs = {'logger': self.logger}
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
             kwargs['env'] = self.environment_variables
+        kwargs['return_output'] = return_output
         return self.executor(*args, **kwargs)
 
-    def execute(self, name):
+    def execute(self, name, return_output=True):
         command = [self.binary_path, name]
         if self.run_all:
             command.insert(1, 'run-all')
@@ -119,10 +131,34 @@ class Terragrunt(object):
         command.extend(self.command_options.get(name, []))
         if 'terragrunt-tfpath' not in command and self.terraform_binary_path:
             command.extend(['--terragrunt-tfpath', self.terraform_binary_path])
-        self._execute(command)
+        return self._execute(command, return_output)
 
     def plan(self):
-        return self.execute('plan')
+        plan = {
+            'resource_drifts': [],
+            'outputs': [],
+            'change_summary': {}
+        }
+        result = self.execute('plan', return_output=False)
+        new_result = result.replace('}{', '}____TG_PLUGIN_PLAN____{')
+        for item in new_result.split('____TG_PLUGIN_PLAN____'):
+            rendered = json.loads(item)
+            if 'type' not in rendered:
+                continue
+            elif rendered['type'] == 'outputs':
+                plan['outputs'] = rendered['outputs']
+            elif rendered['type'] == 'resource_drift':
+                plan['resource_drifts'].append(rendered['change'])
+            elif rendered['type'] == 'change_summary':
+                plan['change_summary'] = rendered['changes']
+
+        self._terraform_plan = plan
+        return self.terraform_plan
+
+    @property
+    def terraform_plan(self):
+        self.logger.info(self._terraform_plan)
+        return self._terraform_plan
 
     def apply(self):
         return self.execute('apply')
@@ -131,7 +167,13 @@ class Terragrunt(object):
         return self.execute('destroy')
 
     def output(self):
-        return self.execute('output')
+        result = self.execute('output', return_output=False)
+        self._terraform_output = json.loads(result)
+        return self.terraform_output
+
+    @property
+    def terraform_output(self):
+        return self._terraform_output
 
     def terragrunt_info(self):
         return self.execute('terragrunt-info')
@@ -144,14 +186,3 @@ class Terragrunt(object):
 
     def render_json(self):
         return self.execute('render-json')
-
-    @contextmanager
-    def update_source_path(self, update_source=False):
-        if update_source or not self.source_path:
-            source_path = os.path.join(
-                self.cwd, self.resource_config.get('source_path'))
-            try:
-                yield self.source
-            finally:
-                self._source_path = source_path
-

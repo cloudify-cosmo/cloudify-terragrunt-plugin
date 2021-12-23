@@ -3,11 +3,11 @@ from copy import deepcopy
 from shutil import rmtree
 
 from cloudify import ctx as ctx_from_imports
+from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
     get_ctx_node,
     get_ctx_instance,
-    get_deployment_dir,
-    get_shared_resource)
+    get_deployment_dir)
 from cloudify_common_sdk.processes import general_executor, process_execution
 
 from tg_sdk import Terragrunt, utils as tg_sdk_utils
@@ -18,10 +18,63 @@ MASKED_ENV_VARS = {}
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
+    ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
         ctx_instance.runtime_properties['resource_config'] = \
-            resource_config or  ctx_node.properties['resource_config']
+            resource_config or ctx_node.properties['resource_config']
+    validate_resource_config()
     return ctx_instance.runtime_properties['resource_config']
+
+
+def validate_resource_config():
+    ctx_instance = get_ctx_instance()
+    ctx_from_imports.logger.info('Validating resource_config...')
+    i = 0  # "Error 1" is more readable.
+    errors = []
+    resource_config = ctx_instance.runtime_properties['resource_config']
+    if resource_config['source_path'].startswith('/') and \
+            ctx_instance.id not in resource_config['source_path']:
+        i += 1
+        message = \
+            'Error {i} - The source_path provided, {sp}, is invalid. ' \
+            'The path should be relative to the source location root.'.format(
+                i=i, sp=resource_config['source_path'])
+        errors.append(message)
+    if isinstance(resource_config['source'], dict) and not \
+            resource_config['source'].get('location', '').endswith('.zip') or \
+            isinstance(resource_config['source'], str) and not \
+            resource_config['source'].endswith('.zip'):
+        i += 1
+        message = \
+            'Error {i} - The source location provided, {s}, is invalid. ' \
+            'Only zip archives are currently supported.'.format(
+                i=i, s=resource_config['source'])
+        errors.append(message)
+    if i > 0:
+        raise NonRecoverableError(
+            'The resource_config provided failed to pass validation: '
+            '\n' + '\n'.join(errors))
+    ctx_from_imports.logger.info('The provided resource_config is valid.')
+
+# def configure_binary(ni, node_type, prop):
+#     path = ni.runtime_properties['resource_config'].get(prop)
+#     if path and not os.path.exists(path) or not path:
+#         for rel in find_rels_by_node_type(ni, node_type):
+#             rp_props = rel.target.instance.runtime_properties
+#             path = rp_props['executable_path']
+#             if path and not os.path.exists(path):
+#                 source = rp_props['resource_config']['installation_source']
+#                 tg_dir = os.path.join(
+#                       get_deployment_dir(), rel.target.node.id)
+#                 install_binary(path, tg_dir, source)
+#             if path:
+#                 ni.runtime_properties['resource_config'][prop] = path
+#
+#
+# def configure_binaries():
+#     ni = get_ctx_instance()
+#     configure_binary(ni, 'cloudify.nodes.Terragrunt', 'binary_path')
+#     configure_binary(ni, 'cloudify.nodes.terraform', 'terraform_binary_path')
 
 
 def terragrunt_from_ctx(kwargs):
@@ -30,20 +83,35 @@ def terragrunt_from_ctx(kwargs):
     ctx_instance = get_ctx_instance(_ctx)
     ctx = _ctx or ctx_from_imports
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
+    node_instance_dir = get_node_instance_dir()
+    # configure_binaries()
+    ctx_from_imports.logger.info('Initializing Terragrunt interface...')
     tg = Terragrunt(
-        ctx_node,
+        ctx_node.properties,
         logger=ctx.logger,
         executor=run,
-        cwd=get_deployment_dir(ctx.deployment.id),
+        cwd=get_node_instance_dir(),
         **ctx_instance.runtime_properties['resource_config']
     )
     update_source = kwargs.get('update_source', False)
     if update_source:
+        ctx_from_imports.logger.info(
+            'Cleaning up previous Terragrunt workspace...')
         cleanup_old_terragrunt_source()
-    # Maybe we want to update it if it already exists.
-    # Maybe we need to download a new source.
-    with tg.update_source_path(update_source) as source:
-        download_terragrunt_source(source)
+    if update_source or not tg.source_path or \
+            node_instance_dir not in tg.source_path:
+        ctx_from_imports.logger.info(
+            'Downloading new Terragrunt stack to workspace...')
+        download_terragrunt_source(tg.source, node_instance_dir)
+        abs_source_path = ''
+        if tg.source_path:
+            abs_source_path = os.path.join(node_instance_dir, tg.source_path)
+        if node_instance_dir not in abs_source_path:
+            tg.source_path = node_instance_dir
+        else:
+            tg.source_path = abs_source_path
+        ctx_instance.runtime_properties['resource_config']['source_path'] = \
+            tg.source_path
     return tg
 
 
@@ -52,7 +120,7 @@ def run(command,
         cwd=None,
         env=None,
         additional_args=None,
-        return_output=False):
+        return_output=True):
     """Execute a shell script or command."""
 
     logger = logger or ctx_from_imports.logger
@@ -101,16 +169,15 @@ def run(command,
         general_executor_params)
 
 
-def download_terragrunt_source(source):
+def download_terragrunt_source(source, target):
     """Replace the terraform_source material with a new material.
     This is used in terraform.reload_template operation."""
     ctx_from_imports.logger.info(
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
-    node_instance_dir = get_node_instance_dir()
     source_tmp_path = tg_sdk_utils.download_source(
-        source, node_instance_dir, ctx_from_imports.logger)
-    copy_directory(source_tmp_path, node_instance_dir)
+        source, target, ctx_from_imports.logger)
+    copy_directory(source_tmp_path, target)
     remove_directory(source_tmp_path)
 
 
@@ -177,3 +244,44 @@ def get_node_instance_dir():
     ctx_from_imports.logger.debug(
         'Value node_instance_dir is {folder}.'.format(folder=folder))
     return folder
+
+
+# Merge with TF all other plugin
+def find_rels_by_node_type(node_instance, node_type):
+    '''
+        Finds all specified relationships of the Cloudify
+        instance where the related node type is of a specified type.
+    :param `cloudify.context.NodeInstanceContext` node_instance:
+        Cloudify node instance.
+    :param str node_type: Cloudify node type to search
+        node_instance.relationships for.
+    :returns: List of Cloudify relationships
+    '''
+    return [x for x in node_instance.relationships
+            if node_type in x.target.node.type_hierarchy]
+
+
+# Merge with TF Plugin
+def download_file(source, destination):
+    run(['curl', '-o', source, destination])
+
+
+# Merge with TF Plugin
+def install_binary(
+        installation_dir,
+        executable_path,
+        installation_source=None):
+
+    if installation_source:
+        download_file(installation_dir, installation_source)
+        set_permissions(executable_path)
+        os.remove(os.path.join(
+            installation_dir, os.path.basename(installation_source)))
+    return executable_path
+
+
+def set_permissions(target_file):
+    run(
+        ['chmod', 'u+x', target_file],
+        ctx_from_imports.logger
+    )

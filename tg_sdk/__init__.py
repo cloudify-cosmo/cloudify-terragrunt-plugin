@@ -1,1 +1,1 @@
-from .tg import Terragrunt
+from .tg import Terragrunt  # noqa

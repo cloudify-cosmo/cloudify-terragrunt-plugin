@@ -1,0 +1,6 @@
+operation: run_command
+operation_kwargs:
+    command: "graph-dependencies"
+    options: ["-json"]
+    force: true
+node_ids: '["terraform"]'

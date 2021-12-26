@@ -123,6 +123,8 @@ def run(command,
         return_output=True):
     """Execute a shell script or command."""
 
+    # TODO: Mask sensitive variables, like AWS creds in logs.
+
     logger = logger or ctx_from_imports.logger
     cwd = cwd or get_node_instance_dir()
 

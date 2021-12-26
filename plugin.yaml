@@ -90,47 +90,45 @@ node_types:
         delete:
           implementation: tg.cloudify_tg.tasks.delete
       terragrunt:
+        terragrunt_plan:
+          implementation: tg.cloudify_tg.tasks.terragrunt_plan
+          inputs: &command_options
+            options:
+              description: >
+                A list of options to extend the command list.
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command
           inputs:
-            runtime_properties:
             command:
               description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
-            options: &terragrunt_command_options
-              description: >
-                A list of options to extend the command list.
-        terragrunt_plan:
-          implementation: tg.cloudify_tg.tasks.terragrunt_plan
-          inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         terragrunt_destroy:
           implementation: tg.cloudify_tg.tasks.terragrunt_destroy
           inputs:
-            <<: *terragrunt_command_options
         terragrunt_output:
           implementation: tg.cloudify_tg.tasks.terragrunt_output
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         terragrunt_apply:
           implementation: tg.cloudify_tg.tasks.terragrunt_apply
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         terragrunt_info:
           implementation: tg.cloudify_tg.tasks.terragrunt_info
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         validate_inputs:
           implementation: tg.cloudify_tg.tasks.validate_inputs
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         graph_dependencies:
           implementation: tg.cloudify_tg.tasks.graph_dependencies
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
         render_json:
           implementation: tg.cloudify_tg.tasks.render_json
           inputs:
-            <<: *terragrunt_command_options
+            <<: *command_options
 
 #workflows:
 #

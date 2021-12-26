@@ -102,39 +102,39 @@ node_types:
 #                A list of options to extend the command list.
 #                For example, if you wish to run "terragrunt apply --terragrunt-debug --terragrunt-override-attr foo=bar",
 #                then the options input is: '["--terragrunt-debug", "--terragrunt-override-attr", "foo=bar"]'
-#        terragrunt_plan:
-#          implementation: tg.cloudify_tg.tasks.terragrunt_plan
-#          inputs:
-#            <<: terragrunt_command_options
-#        terragrunt_destroy:
-#          implementation: tg.cloudify_tg.tasks.terragrunt_destroy
-#          inputs:
-#            <<: terragrunt_command_options
-#        terragrunt_output:
-#          implementation: tg.cloudify_tg.tasks.terragrunt_output
-#          inputs:
-#            <<: terragrunt_command_options
-#        terragrunt_apply:
-#          implementation: tg.cloudify_tg.tasks.terragrunt_apply
-#          inputs:
-#            <<: terragrunt_command_options
-#        terragrunt_info:
-#          implementation: tg.cloudify_tg.tasks.terragrunt_info
-#          inputs:
-#            <<: terragrunt_command_options
-#        validate_inputs:
-#          implementation: tg.cloudify_tg.tasks.validate_inputs
-#          inputs:
-#            <<: terragrunt_command_options
-#        graph_dependencies:
-#          implementation: tg.cloudify_tg.tasks.graph_dependencies
-#          inputs:
-#            <<: terragrunt_command_options
-#        render_json:
-#          implementation: tg.cloudify_tg.tasks.render_json
-#          inputs:
-#            <<: terragrunt_command_options
-#
+        terragrunt_plan:
+          implementation: tg.cloudify_tg.tasks.terragrunt_plan
+          inputs:
+            <<: terragrunt_command_options
+        terragrunt_destroy:
+          implementation: tg.cloudify_tg.tasks.terragrunt_destroy
+          inputs:
+            <<: terragrunt_command_options
+        terragrunt_output:
+          implementation: tg.cloudify_tg.tasks.terragrunt_output
+          inputs:
+            <<: terragrunt_command_options
+        terragrunt_apply:
+          implementation: tg.cloudify_tg.tasks.terragrunt_apply
+          inputs:
+            <<: terragrunt_command_options
+        terragrunt_info:
+          implementation: tg.cloudify_tg.tasks.terragrunt_info
+          inputs:
+            <<: terragrunt_command_options
+        validate_inputs:
+          implementation: tg.cloudify_tg.tasks.validate_inputs
+          inputs:
+            <<: terragrunt_command_options
+        graph_dependencies:
+          implementation: tg.cloudify_tg.tasks.graph_dependencies
+          inputs:
+            <<: terragrunt_command_options
+        render_json:
+          implementation: tg.cloudify_tg.tasks.render_json
+          inputs:
+            <<: terragrunt_command_options
+
 #workflows:
 #
 #  Terragrunt_refresh:

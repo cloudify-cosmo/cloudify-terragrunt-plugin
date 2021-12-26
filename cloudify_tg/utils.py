@@ -12,9 +12,7 @@ from cloudify_common_sdk.processes import general_executor, process_execution
 
 from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
-
-# SHOULD_BE_USER_PROVIDED
-MASKED_ENV_VARS = {}
+from .constants import MASKED_ENV_VARS
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
@@ -138,10 +136,12 @@ def run(command,
 
     printed_args = deepcopy(args_to_pass)
     printed_env = printed_args.get('env', {})
-    for env_var in printed_env.keys():
-        if env_var in MASKED_ENV_VARS:
+
+    for env_var in MASKED_ENV_VARS:
+        if env_var in printed_env:
             printed_env[env_var] = '****'
 
+    printed_args['env'] = printed_env
     logger.info('Running: command={cmd}, '
                 'cwd={cwd}, '
                 'additional_args={args}'.format(

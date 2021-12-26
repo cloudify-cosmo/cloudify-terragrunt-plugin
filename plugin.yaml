@@ -93,15 +93,12 @@ node_types:
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command
           inputs:
+            runtime_properties:
             command:
-              # type: string
               description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
             options: &terragrunt_command_options
-              # type: list
               description: >
                 A list of options to extend the command list.
-                For example, if you wish to run "terragrunt apply --terragrunt-debug --terragrunt-override-attr foo=bar",
-                then the options input is: '["--terragrunt-debug", "--terragrunt-override-attr", "foo=bar"]'
         terragrunt_plan:
           implementation: tg.cloudify_tg.tasks.terragrunt_plan
           inputs:

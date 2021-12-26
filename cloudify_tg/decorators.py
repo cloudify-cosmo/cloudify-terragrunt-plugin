@@ -1,6 +1,7 @@
 from sys import exc_info
 from functools import wraps
 
+from .utils import is_using_existing
 from cloudify import utils as cfy_utils
 from cloudify.exceptions import NonRecoverableError
 
@@ -28,3 +29,11 @@ def with_terragrunt(func):
                 kwargs['tg'].terraform_output
 
     return wrapper
+
+
+def skip_if_existing(func):
+    @wraps(func)
+    def f(*args, **kwargs):
+        if not is_using_existing():
+            return func(*args, **kwargs)
+    return f

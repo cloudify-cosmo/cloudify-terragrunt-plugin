@@ -14,14 +14,36 @@ from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
 from .constants import MASKED_ENV_VARS
 
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
+
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
         ctx_instance.runtime_properties['resource_config'] = \
             resource_config or ctx_node.properties['resource_config']
+    update_terragrunt_binary(ctx_instance)
     validate_resource_config()
     return ctx_instance.runtime_properties['resource_config']
+
+
+def update_terragrunt_binary(ctx_instance):
+    terragrunt_nodes = find_rels_by_node_type(ctx_instance,
+                                              'cloudify.nodes.terragrunt')
+    if len(terragrunt_nodes) == 1:
+        ctx_instance.runtime_properties['resource_config']['binary_path'] = \
+            terragrunt_nodes[0].instance.runtime_properties['executable_path']
+    elif not len(terragrunt_nodes):
+        return
+    else:
+        raise NonRecoverableError(
+            'Only one relationship of type '
+            'cloudify.relationships.terragrunt.depends_on '
+            'to node type cloudify.nodes.terragrunt may be used per node.')
 
 
 def validate_resource_config():
@@ -258,7 +280,7 @@ def find_rels_by_node_type(node_instance, node_type):
     :returns: List of Cloudify relationships
     '''
     return [x for x in node_instance.relationships
-            if node_type in x.target.node.type_hierarchy]
+            if node_type in x.type_hierarchy]
 
 
 # Merge with TF Plugin
@@ -275,8 +297,6 @@ def install_binary(
     if installation_source:
         download_file(installation_dir, installation_source)
         set_permissions(executable_path)
-        os.remove(os.path.join(
-            installation_dir, os.path.basename(installation_source)))
     return executable_path
 
 
@@ -285,3 +305,111 @@ def set_permissions(target_file):
         ['chmod', 'u+x', target_file],
         ctx_from_imports.logger
     )
+
+
+def get_executable_path():
+    """The Terragrunt binary executable.
+    It should either be: null, in which case it defaults to
+    /opt/manager/resources/deployments/{tenant}/{deployment_id}/terragrunt
+    or it will be /usr/bin/terragrunt, and this should be used as an
+    existing resource.
+    Any other value will probably not work for the user.
+    """
+    instance = get_instance()
+    executable_path = instance.runtime_properties.get('executable_path')
+    if not executable_path:
+        terragrunt_config = get_terragrunt_config()
+        executable_path = terragrunt_config.get('executable_path')
+    if not executable_path:
+        executable_path = \
+            os.path.join(get_node_instance_dir(), 'terragrunt')
+    if not os.path.exists(executable_path) and \
+            is_using_existing():
+        node = get_node()
+        terragrunt_config = node.properties.get('terragrunt_config', {})
+        executable_path = terragrunt_config.get('executable_path')
+    instance.runtime_properties['executable_path'] = executable_path
+    return executable_path
+
+
+def get_instance(_ctx=None, target=False, source=False):
+    """Get a CTX instance, either NI, target or source."""
+    _ctx = _ctx or ctx_from_imports
+    if _ctx.type == RELATIONSHIP_INSTANCE:
+        if target:
+            return _ctx.target.instance
+        elif source:
+            return _ctx.source.instance
+        return _ctx.source.instance
+    else:  # _ctx.type == NODE_INSTANCE
+        return _ctx.instance
+
+
+def get_terragrunt_config(target=False):
+    """get the cloudify.nodes.terragrunt or cloudify.nodes.terragrunt.Module
+    terragrunt_config"""
+    instance = get_instance(target=target)
+    terragrunt_config = instance.runtime_properties.get('terragrunt_config')
+    if terragrunt_config:
+        return terragrunt_config
+    node = get_node(target=target)
+    return node.properties.get('terragrunt_config', {})
+
+
+def get_node(_ctx=None, target=False):
+    """Get a node ctx"""
+    _ctx = _ctx or ctx_from_imports
+    if _ctx.type == RELATIONSHIP_INSTANCE:
+        if target:
+            return _ctx.target.node
+        return _ctx.source.node
+    else:  # _ctx.type == NODE_INSTANCE
+        return _ctx.node
+
+
+def is_using_existing(target=True):
+    """Decide if we need to do this work or not."""
+    resource_config = get_resource_config(target=target)
+    if not target:
+        tf_rel = find_terragrunt_node_from_rel()
+        if tf_rel:
+            resource_config = tf_rel.target.instance.runtime_properties.get(
+                'resource_config', {})
+    return resource_config.get('use_existing_resource', True)
+
+
+def get_resource_config(target=False):
+    """Get the cloudify.nodes.terragrunt.Module resource_config"""
+    instance = get_instance(target=target)
+    resource_config = instance.runtime_properties.get('resource_config')
+    if not resource_config or ctx_from_imports.workflow_id == 'install':
+        node = get_node(target=target)
+        resource_config = node.properties.get('resource_config', {})
+    return resource_config
+
+
+def find_terragrunt_node_from_rel():
+    return find_rel_by_type(
+        ctx_from_imports.instance, 'cloudify.terragrunt.relationships.run_on_host')
+
+
+def find_rel_by_type(node_instance, rel_type):
+    rels = find_rels_by_type(node_instance, rel_type)
+    return rels[0] if len(rels) > 0 else None
+
+
+def find_rels_by_type(node_instance, rel_type):
+    return [x for x in node_instance.relationships
+            if rel_type in x.type_hierarchy]
+
+
+def get_installation_source(target=False):
+    """This is the URL or file where we can get the Terragrunt binary"""
+    resource_config = get_resource_config(target=target)
+    source = resource_config.get('installation_source')
+    if not source:
+        raise NonRecoverableError(
+            'No download URL for terragrunt binary executable file was '
+            'provided and use_external_resource is False. '
+            'Please provide a valid download URL.')
+    return source

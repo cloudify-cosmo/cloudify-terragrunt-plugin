@@ -96,11 +96,13 @@ node_types:
             options:
               description: >
                 A list of options to extend the command list.
+              default: false
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command
           inputs:
             command:
               description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
+              default: ''
             <<: *command_options
         terragrunt_destroy:
           implementation: tg.cloudify_tg.tasks.terragrunt_destroy

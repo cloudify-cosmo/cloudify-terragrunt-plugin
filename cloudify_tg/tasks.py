@@ -44,7 +44,7 @@ def terragrunt_destroy(tg, **_):
 @operation
 @decorators.with_terragrunt
 def terragrunt_output(tg, **_):
-    tg.terraform_output()
+    tg.output()
 
 @operation
 @decorators.with_terragrunt

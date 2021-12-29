@@ -144,10 +144,15 @@ def run(command,
         if env_var in MASKED_ENV_VARS:
             printed_env[env_var] = '****'
 
+    printed_cmd = command
+    for env_var in printed_env.keys():
+        if env_var in MASKED_ENV_VARS:
+            printed_cmd[env_var] = '****'
+
     logger.info('Running: command={cmd}, '
                 'cwd={cwd}, '
                 'additional_args={args}'.format(
-                    cmd=command,
+                    cmd=printed_cmd,
                     cwd=cwd,
                     args=printed_args))
 

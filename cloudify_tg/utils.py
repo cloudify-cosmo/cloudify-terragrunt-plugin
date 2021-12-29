@@ -14,7 +14,10 @@ from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
 
 # SHOULD_BE_USER_PROVIDED
-MASKED_ENV_VARS = {}
+MASKED_ENV_VARS = {
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_ACCESS_KEY_ID'
+}
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
@@ -140,11 +143,12 @@ def run(command,
 
     printed_args = deepcopy(args_to_pass)
     printed_env = printed_args.get('env', {})
-    for env_var in printed_env.keys():
-        if env_var in MASKED_ENV_VARS:
-            printed_env[env_var] = '****'
-    printed_args['env'] = printed_env
 
+    for env_var in MASKED_ENV_VARS:
+        if env_var in printed_env:
+            printed_env[env_var] = '****'
+
+    printed_args['env'] = printed_env
     logger.info('Running: command={cmd}, '
                 'cwd={cwd}, '
                 'additional_args={args}'.format(

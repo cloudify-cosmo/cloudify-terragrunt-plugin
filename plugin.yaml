@@ -64,7 +64,7 @@ data_types:
           apply: '["--terragrunt-log-level", "info"]'
           destroy: '["--terragrunt-log-level", "debug"]'
         default:
-          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug"]
+          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-lock=false"]
           apply: ["-auto-approve"]
           destroy: ["-auto-approve"]
           plan: ["-json"]

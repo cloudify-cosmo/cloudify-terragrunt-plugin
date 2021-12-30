@@ -12,12 +12,7 @@ from cloudify_common_sdk.processes import general_executor, process_execution
 
 from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
-
-# SHOULD_BE_USER_PROVIDED
-MASKED_ENV_VARS = {
-    'AWS_SECRET_ACCESS_KEY',
-    'AWS_ACCESS_KEY_ID'
-}
+from .constants import MASKED_ENV_VARS
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
@@ -125,8 +120,6 @@ def run(command,
         additional_args=None,
         return_output=True):
     """Execute a shell script or command."""
-
-    # TODO: Mask sensitive variables, like AWS creds in logs.
 
     logger = logger or ctx_from_imports.logger
     cwd = cwd or get_node_instance_dir()

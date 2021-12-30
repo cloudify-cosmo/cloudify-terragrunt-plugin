@@ -2,31 +2,7 @@ from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
 from . import decorators
-
-# TODO: List all of the possibilities from here
-#  https://terragrunt.gruntwork.io/docs/reference/cli-options/
-SUPPORTED_TG_COMMANDS = [
-    'run-all',
-    'plan',
-    'apply',
-    'output',
-    'destroy',
-    'validate',
-    'terragrunt-info',
-    'validate-inputs',
-    'graph-dependencies',
-    'hclfmt',
-    'aws-provider-patch',
-    'render-json'
-]
-
-SUPPORTED_TG_COMMANDS_OPTIONS = [
-    '--terragrunt-non-interactive',
-    '--terragrunt-log-level',
-    'debug',
-    '-auto-approve',
-    '-json'
-]
+from .constants import SUPPORTED_TG_COMMANDS_OPTIONS, SUPPORTED_TG_COMMANDS
 
 @operation
 @decorators.with_terragrunt
@@ -106,12 +82,6 @@ def render_json(tg, **_):
 @operation
 @decorators.with_terragrunt
 def run_command(command, tg, options=None, force=False, *_, **__):
-
-    # TODO: Add force to parameters.
-    # TODO: Protect against injection.
-    # E.g. https://portswigger.net/web-security/os-command-injection
-    tg.logger.info('** command: {}'.format(command))
-    tg.logger.info('** options: {}'.format(options))
 
     if command.startswith('run-all'):
         ___, command = command.split(' ')

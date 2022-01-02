@@ -21,10 +21,12 @@ class Terragrunt(object):
         self._source = None
         self._source_path = None
         self._binary_path = None
+        self._command_options = {}
         self.executor = executor or utils.basic_executor
         self.cwd = kwargs.get('cwd')
         self._terraform_plan = None
         self._terraform_output = []
+        self._run_all = None
 
     @property
     def properties(self):
@@ -94,7 +96,13 @@ class Terragrunt(object):
         """ True or False, whether to execute as run_all.
         :return: bool
         """
-        return self.resource_config.get('run_all', False)
+        if not self._run_all:
+            self._run_all = self.resource_config.get('run_all', False)
+        return self._run_all
+
+    @run_all.setter
+    def run_all(self, value):
+        self._run_all = value
 
     @property
     def environment_variables(self):
@@ -106,7 +114,12 @@ class Terragrunt(object):
 
     @property
     def command_options(self):
+        if self._command_options:
+            return self._command_options
         return self.resource_config.get('command_options', {})
+
+    def update_command_options(self, new_dict):
+        self._command_options.update(new_dict)
 
     @property
     def version(self):

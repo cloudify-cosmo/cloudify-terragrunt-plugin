@@ -5,7 +5,33 @@ plugins:
     package_name: cloudify-terragrunt-plugin
     package_version: '0.0.1'
 
+dsl_definitions:
+
+  terragrunt_config: &terragrunt_config
+    terragrunt_config:
+      type: cloudify.types.terragrunt.DirectoryConfig
+      description: Terragrunt directories for executions.
+      required: false
+
 data_types:
+
+  cloudify.types.terragrunt.DirectoryConfig:
+    properties:
+      executable_path:
+        type: string
+        description: The path to the terragrunt binary executable.
+        required: false
+
+  cloudify.types.terragrunt.InstallConfig:
+    properties:
+      use_existing_resource:
+        type: boolean
+        description: If true, use an existing Terragrunt installation rather than installing it
+        default: false
+      installation_source:
+        type: string
+        default: 'https://github.com/gruntwork-io/terragrunt/releases/download/v0.35.16/terragrunt_linux_amd64'
+        description: Location to download the Terraform executable binary from. Ignored if 'use_existing' is true.
 
   cloudify.types.terragrunt.SourceSpecification:
     properties:
@@ -64,13 +90,32 @@ data_types:
           apply: '["--terragrunt-log-level", "info"]'
           destroy: '["--terragrunt-log-level", "debug"]'
         default:
-          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-lock=false"]
+          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug"]
           apply: ["-auto-approve"]
           destroy: ["-auto-approve"]
           plan: ["-json"]
           output: ["-json"]
 
+relationships:
+  cloudify.relationships.terragrunt.depends_on:
+    derived_from: cloudify.relationships.depends_on
+
 node_types:
+
+  # Represents a Terragrunt installation.
+  cloudify.nodes.terragrunt:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      <<: *terragrunt_config
+      resource_config:
+        type: cloudify.types.terragrunt.InstallConfig
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: tg.cloudify_tg.tasks.install
+        delete:
+          implementation: tg.cloudify_tg.tasks.uninstall
 
   # Represents a Terragrunt Stack.
   cloudify.nodes.terragrunt.Stack:
@@ -94,12 +139,14 @@ node_types:
           implementation: tg.cloudify_tg.tasks.terragrunt_plan
           inputs: &command_options
             options:
+              default: {}
               description: >
                 A list of options to extend the command list.
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command
           inputs:
             command:
+              default: ""
               description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
             <<: *command_options
             force:

@@ -87,7 +87,7 @@ def terragrunt_from_ctx(kwargs):
     tg = Terragrunt(
         ctx_node.properties,
         logger=ctx.logger,
-        executor=run,
+        executor=run_subprocess,
         cwd=get_node_instance_dir(),
         **ctx_instance.runtime_properties['resource_config']
     )
@@ -113,7 +113,7 @@ def terragrunt_from_ctx(kwargs):
     return tg
 
 
-def run(command,
+def run_subprocess(command,
         logger=None,
         cwd=None,
         env=None,
@@ -218,12 +218,12 @@ def cleanup_old_terragrunt_source():
 
 # Merge with TF Plugin
 def copy_directory(src, dst):
-    run(['cp', '-r', os.path.join(src, '*'), dst])
+    run_subprocess(['cp', '-r', os.path.join(src, '*'), dst])
 
 
 # Merge with TF Plugin
 def remove_directory(dir):
-    run(['rm', '-rf', dir])
+    run_subprocess(['rm', '-rf', dir])
 
 
 # Merge with TF Plugin
@@ -263,7 +263,7 @@ def find_rels_by_node_type(node_instance, node_type):
 
 # Merge with TF Plugin
 def download_file(source, destination):
-    run(['curl', '-o', source, destination])
+    run_subprocess(['curl', '-o', source, destination])
 
 
 # Merge with TF Plugin
@@ -281,7 +281,7 @@ def install_binary(
 
 
 def set_permissions(target_file):
-    run(
+    run_subprocess(
         ['chmod', 'u+x', target_file],
         ctx_from_imports.logger
     )

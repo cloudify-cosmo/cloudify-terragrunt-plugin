@@ -1,6 +1,5 @@
 import os
 import json
-from tempfile import NamedTemporaryFile
 
 from . import utils
 

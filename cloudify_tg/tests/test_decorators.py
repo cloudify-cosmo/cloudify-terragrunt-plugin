@@ -35,7 +35,9 @@ def fake_function(*args, **kwargs):
 @contextmanager
 def mock_terragrunt_from_ctx(*_, **__):
     with patch('cloudify_tg.decorators.utils') as mocked:
-        mocked.terragrunt_from_ctx.return_value = Mock()
+        mocked.terragrunt_from_ctx.return_value = Mock(
+            terraform_plan='terraform_plan',
+            terraform_output='terraform_output')
         yield mocked
 
 
@@ -63,7 +65,7 @@ def test_decorator_raises():
                                'Did not raise expected exception.')
 
 
-def test_decorator_stores():
+def test_decorator_stores_runtime_props():
     args = []
     kwargs = {
         'ctx': mock_context('test_decorator_raises',
@@ -71,9 +73,7 @@ def test_decorator_stores():
                             {'foo': 'bar'},
                             {'baz': 'taco'})
     }
-    with mock_terragrunt_from_ctx() as mocked:
-        mocked.terraform_plan = 'terraform_plan'
-        mocked.terraform_output = 'terraform_output'
+    with mock_terragrunt_from_ctx():
         fake_function(*args, **kwargs)
         assert kwargs['ctx'].instance.runtime_properties[
                    'terraform_plan'] == 'terraform_plan'

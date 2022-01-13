@@ -8,11 +8,27 @@ from cloudify_common_sdk.utils import (
     get_ctx_node,
     get_ctx_instance,
     get_deployment_dir)
-from cloudify_common_sdk.processes import general_executor, process_execution
+from cloudify_common_sdk.processes import general_executor, process_execution, get_shared_resource
 
-from tg_sdk import Terragrunt, utils as tg_sdk_utils
+from tg_sdk import Terragrunt
 
 from .constants import MASKED_ENV_VARS
+
+
+def download_source(source, target_directory, logger):
+    logger.debug('Downloading {source} to {dest}.'.format(
+        source=source, dest=target_directory))
+    if isinstance(source, dict):
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory,
+            username=source.get('username'),
+            password=source.get('password'))
+    else:
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory)
+    logger.debug('Downloaded temporary source path {}'.format(source_tmp_path))
+    # Plugins must delete this.
+    return source_tmp_path
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
@@ -175,7 +191,7 @@ def download_terragrunt_source(source, target):
     ctx_from_imports.logger.info(
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
-    source_tmp_path = tg_sdk_utils.download_source(
+    source_tmp_path = download_source(
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
     remove_directory(source_tmp_path)

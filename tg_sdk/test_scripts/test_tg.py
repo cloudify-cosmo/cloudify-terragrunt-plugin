@@ -1,4 +1,4 @@
-
+import os
 from tg_sdk import tg
 
 init_params = {
@@ -10,9 +10,9 @@ init_params = {
             'source_path': '',
             'variables': {},
             'environment_variables': {
-                'AWS_ACCESS_KEY_ID': '**',
-                'AWS_SECRET_ACCESS_KEY': '**',
-                'AWS_DEFAULT_REGION': 'eu-west-1'
+                'AWS_ACCESS_KEY_ID': os.environ['AWS_ACCESS_KEY_ID'],
+                'AWS_SECRET_ACCESS_KEY': os.environ['AWS_SECRET_ACCESS_KEY'],
+                'AWS_DEFAULT_REGION': os.environ['eu-west-1']
             },
             'run_all': False,
             'command_options': {

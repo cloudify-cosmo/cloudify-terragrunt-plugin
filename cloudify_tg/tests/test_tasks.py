@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 from cloudify.mocks import MockCloudifyContext
 
+from .. import tasks
 
 def mock_context(test_name,
                  test_node_id,
@@ -28,12 +29,14 @@ def mock_terragrunt_from_ctx(*_, **__):
         yield mocked
 
 
-@patch('cloudify_tg.tasks.terragrunt_info')
-@patch('cloudify_tg.tasks.graph_dependencies')
-@patch('cloudify_tg.tasks.validate_inputs')
-# @patch('cloudify_tg.tasks.plan')
-def test_precreate(self, *_):
+def test_precreate():
+    ctx = mock_context('test_precreate',
+                       'test_precreate',
+                       {},
+                       {})
     with mock_terragrunt_from_ctx() as tg:
-        tg.terragrunt_info()
-        tg.graph_dependencies()
-        tg.validate_inputs()
+        tasks.precreate(ctx=ctx)
+        tg.terragrunt_from_ctx().terragrunt_info.assert_called_once()
+        assert 'terraform_plan' in ctx.instance.runtime_properties
+
+

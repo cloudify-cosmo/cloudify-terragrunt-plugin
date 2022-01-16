@@ -1,1 +1,1 @@
-https://github.com/cloudify-incubator/cloudify-utilities-plugins-sdk/archive/refs/heads/RD-3712-Move-Helper-Functions-To-Common-SDK-Utils.zip
+cloudify-utilities-plugins-sdk>=0.0.52

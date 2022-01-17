@@ -1,25 +1,7 @@
-from mock import patch, Mock
-from contextlib import contextmanager
-
-from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
 from .. import decorators
-
-
-def mock_context(test_name,
-                 test_node_id,
-                 test_properties,
-                 test_runtime_properties):
-
-    ctx = MockCloudifyContext(
-        node_id=test_node_id,
-        properties=test_properties,
-        runtime_properties=None if not test_runtime_properties
-        else test_runtime_properties,
-        deployment_id=test_name
-    )
-    return ctx
+from . import mock_context, mock_terragrunt_from_ctx
 
 
 @decorators.with_terragrunt
@@ -30,15 +12,6 @@ def fake_function(*args, **kwargs):
             raise Exception('caught ya')
 
     return args, kwargs
-
-
-@contextmanager
-def mock_terragrunt_from_ctx(*_, **__):
-    with patch('cloudify_tg.decorators.utils') as mocked:
-        mocked.terragrunt_from_ctx.return_value = Mock(
-            terraform_plan='terraform_plan',
-            terraform_output='terraform_output')
-        yield mocked
 
 
 def test_decorator_raises():

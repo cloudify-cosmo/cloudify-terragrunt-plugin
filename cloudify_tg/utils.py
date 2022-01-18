@@ -1,18 +1,25 @@
 import os
-from copy import deepcopy
 from shutil import rmtree
 
 from cloudify import ctx as ctx_from_imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
+    mkdir_p,
     get_ctx_node,
+    download_file,
+    run_subprocess,
+    copy_directory,
+    set_permissions,
     get_ctx_instance,
-    get_deployment_dir)
+    get_deployment_dir
+)
 from cloudify_common_sdk.processes import general_executor, process_execution, get_shared_resource
+    remove_directory,
+    get_deployment_dir,
+    get_node_instance_dir,
+)
 
 from tg_sdk import Terragrunt
-
-from .constants import MASKED_ENV_VARS
 
 
 def download_source(source, target_directory, logger):
@@ -70,26 +77,6 @@ def validate_resource_config():
             '\n' + '\n'.join(errors))
     ctx_from_imports.logger.info('The provided resource_config is valid.')
 
-# def configure_binary(ni, node_type, prop):
-#     path = ni.runtime_properties['resource_config'].get(prop)
-#     if path and not os.path.exists(path) or not path:
-#         for rel in find_rels_by_node_type(ni, node_type):
-#             rp_props = rel.target.instance.runtime_properties
-#             path = rp_props['executable_path']
-#             if path and not os.path.exists(path):
-#                 source = rp_props['resource_config']['installation_source']
-#                 tg_dir = os.path.join(
-#                       get_deployment_dir(), rel.target.node.id)
-#                 install_binary(path, tg_dir, source)
-#             if path:
-#                 ni.runtime_properties['resource_config'][prop] = path
-#
-#
-# def configure_binaries():
-#     ni = get_ctx_instance()
-#     configure_binary(ni, 'cloudify.nodes.Terragrunt', 'binary_path')
-#     configure_binary(ni, 'cloudify.nodes.terraform', 'terraform_binary_path')
-
 
 def terragrunt_from_ctx(kwargs):
     _ctx = kwargs.get('ctx')
@@ -103,7 +90,7 @@ def terragrunt_from_ctx(kwargs):
     tg = Terragrunt(
         ctx_node.properties,
         logger=ctx.logger,
-        executor=run,
+        executor=run_subprocess,
         cwd=get_node_instance_dir(),
         **ctx_instance.runtime_properties['resource_config']
     )
@@ -129,62 +116,6 @@ def terragrunt_from_ctx(kwargs):
     return tg
 
 
-def run(command,
-        logger=None,
-        cwd=None,
-        env=None,
-        additional_args=None,
-        return_output=True):
-    """Execute a shell script or command."""
-
-    logger = logger or ctx_from_imports.logger
-    cwd = cwd or get_node_instance_dir()
-
-    if additional_args is None:
-        additional_args = {}
-
-    args_to_pass = deepcopy(additional_args)
-
-    if env:
-        passed_env = args_to_pass.setdefault('env', {})
-        passed_env.update(os.environ)
-        passed_env.update(env)
-
-    printed_args = deepcopy(args_to_pass)
-    printed_env = printed_args.get('env', {})
-
-    for env_var in MASKED_ENV_VARS:
-        if env_var in printed_env:
-            printed_env[env_var] = '****'
-
-    printed_args['env'] = printed_env
-    logger.info('Running: command={cmd}, '
-                'cwd={cwd}, '
-                'additional_args={args}'.format(
-                    cmd=command,
-                    cwd=cwd,
-                    args=printed_args))
-
-    general_executor_params = deepcopy(args_to_pass)
-    general_executor_params['cwd'] = cwd
-    if 'log_stdout' not in general_executor_params:
-        general_executor_params['log_stdout'] = return_output
-    if 'log_stderr' not in general_executor_params:
-        general_executor_params['log_stderr'] = True
-    if 'stderr_to_stdout' not in general_executor_params:
-        general_executor_params['stderr_to_stdout'] = False
-    script_path = command.pop(0)
-    general_executor_params['args'] = command
-    general_executor_params['max_sleep_time'] = get_ctx_node().properties.get(
-        'max_sleep_time', 300)
-
-    return process_execution(
-        general_executor,
-        script_path,
-        ctx_from_imports,
-        general_executor_params)
-
-
 def download_terragrunt_source(source, target):
     """Replace the terraform_source material with a new material.
     This is used in terraform.reload_template operation."""
@@ -201,8 +132,6 @@ def get_terragrunt_source_config(new_source_config=False):
     """Source config can be either
     { 'location': URL, 'username': 'foo'', 'password': 'bar'} or URL.
     It should be in the node properties or in the runtime properties
-
-
     :param new_source_config: a string or a dict or None
     :return:
     """
@@ -230,74 +159,3 @@ def cleanup_old_terragrunt_source():
             rmtree(path)
         except OSError:
             os.remove(path)
-
-
-# Merge with TF Plugin
-def copy_directory(src, dst):
-    run(['cp', '-r', os.path.join(src, '*'), dst])
-
-
-# Merge with TF Plugin
-def remove_directory(dir):
-    run(['rm', '-rf', dir])
-
-
-# Merge with TF Plugin
-def mkdir_p(path):
-    import pathlib
-    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-
-
-# Merge with TF Plugin
-def get_node_instance_dir():
-    instance = get_ctx_instance()
-    folder = os.path.join(
-        get_deployment_dir(ctx_from_imports.deployment.id),
-        instance.id
-    )
-    if not os.path.exists(folder):
-        mkdir_p(folder)
-    ctx_from_imports.logger.debug(
-        'Value node_instance_dir is {folder}.'.format(folder=folder))
-    return folder
-
-
-# Merge with TF all other plugin
-def find_rels_by_node_type(node_instance, node_type):
-    '''
-        Finds all specified relationships of the Cloudify
-        instance where the related node type is of a specified type.
-    :param `cloudify.context.NodeInstanceContext` node_instance:
-        Cloudify node instance.
-    :param str node_type: Cloudify node type to search
-        node_instance.relationships for.
-    :returns: List of Cloudify relationships
-    '''
-    return [x for x in node_instance.relationships
-            if node_type in x.target.node.type_hierarchy]
-
-
-# Merge with TF Plugin
-def download_file(source, destination):
-    run(['curl', '-o', source, destination])
-
-
-# Merge with TF Plugin
-def install_binary(
-        installation_dir,
-        executable_path,
-        installation_source=None):
-
-    if installation_source:
-        download_file(installation_dir, installation_source)
-        set_permissions(executable_path)
-        os.remove(os.path.join(
-            installation_dir, os.path.basename(installation_source)))
-    return executable_path
-
-
-def set_permissions(target_file):
-    run(
-        ['chmod', 'u+x', target_file],
-        ctx_from_imports.logger
-    )

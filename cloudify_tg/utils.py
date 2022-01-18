@@ -30,13 +30,25 @@ def validate_resource_config():
     i = 0  # "Error 1" is more readable.
     errors = []
     resource_config = ctx_instance.runtime_properties['resource_config']
-    if resource_config['source_path'].startswith('/') and \
+    if 'source_path' not in resource_config:
+        i += 1
+        message = \
+            'Error {i} - No source path was provided, {sp}, is invalid. '\
+            .format(i=i, sp=resource_config['source_path'])
+        errors.append(message)
+    elif resource_config['source_path'].startswith('/') and \
             ctx_instance.id not in resource_config['source_path']:
         i += 1
         message = \
-            'Error {i} - The source_path provided, {sp}, is invalid. ' \
+            'Error {i} - The source_path provided, {sp}. ' \
             'The path should be relative to the source location root.'.format(
                 i=i, sp=resource_config['source_path'])
+        errors.append(message)
+    if 'source' not in resource_config:
+        i += 1
+        message = \
+            'Error {i} - No source was provided, {sp}. '\
+            .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
     if isinstance(resource_config['source'], dict) and not \
             resource_config['source'].get('location', '').endswith('.zip') or \

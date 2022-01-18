@@ -32,8 +32,7 @@ def test_configure_ctx(*_):
     assert result == ctx.instance.runtime_properties['resource_config']
 
 
-@patch('cloudify_tg.utils.validate_resource_config')
-def test_validate_resource_config(*_):
+def test_validate_resource_config():
     node_props = {
         'resource_config': {
             'foo': 'bar'
@@ -49,8 +48,7 @@ def test_validate_resource_config(*_):
 
     ctx.instance.runtime_properties['resource_config'] = {'hello'}
 
-    @patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx)
-    def test_bad():
+    with patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx.instance):
         try:
             utils.validate_resource_config()
             assert False, 'need to raise exception NonRecoverableError'
@@ -59,8 +57,7 @@ def test_validate_resource_config(*_):
 
     ctx.instance.runtime_properties['resource_config'] = {'foo': 'bar'}
 
-    @patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx)
-    def test_good():
+    with patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx.instance):
         try:
             utils.validate_resource_config()
             assert True, 'no exceptions'

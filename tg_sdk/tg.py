@@ -1,7 +1,5 @@
 import os
 import json
-from tempfile import NamedTemporaryFile
-
 from . import utils
 
 
@@ -132,7 +130,7 @@ class Terragrunt(object):
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
-            kwargs['env'] = self.environment_variables
+            kwargs['additional_env'] = self.environment_variables
         kwargs['return_output'] = return_output
         return self.executor(*args, **kwargs)
 

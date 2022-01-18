@@ -84,6 +84,7 @@ def terragrunt_from_ctx(kwargs):
         **ctx_instance.runtime_properties['resource_config']
     )
     update_source = kwargs.get('update_source', False)
+    # TODO: Pass in test update_source== True and mock cleanup.... and just check calls
     if update_source:
         ctx_from_imports.logger.info(
             'Cleaning up previous Terragrunt workspace...')
@@ -108,6 +109,9 @@ def terragrunt_from_ctx(kwargs):
 def download_terragrunt_source(source, target):
     """Replace the terraform_source material with a new material.
     This is used in terraform.reload_template operation."""
+    # TODO: The test should patch('tg_sdk.utils.download_resource', return...)
+    # TODO: The return value should be a tempfile.mkdtemp ( source_tmp_path == tempfile.mkdtemp())
+    # TODO: In the test, we need to provide a target, tempfile.mkdtemp()
     ctx_from_imports.logger.info(
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
@@ -115,6 +119,8 @@ def download_terragrunt_source(source, target):
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
     remove_directory(source_tmp_path)
+    # TODO: Then we compare target to see that source_tmp_path is in the target.
+    # TODO: And also check that source_tmp_path is deleted.
 
 
 def get_terragrunt_source_config(new_source_config=False):
@@ -135,7 +141,9 @@ def get_terragrunt_source_config(new_source_config=False):
     return node_props['source']
 
 
+# TODO: Write test for cleanup....
 def cleanup_old_terragrunt_source():
+    # TODO: Mock get_node_isntance_dir with mkdtemp()
     node_instance_dir = get_node_instance_dir()
     paths_to_delete = []
     for files in os.listdir(node_instance_dir):

@@ -1,28 +1,30 @@
 from mock import patch
 
+from . import mock_context
+from ..utils import (
+    configure_ctx,
+    validate_resource_config
+)
 
-from .. import utils
-from . import mock_context, mock_terragrunt_from_ctx
 from cloudify.exceptions import NonRecoverableError
-
-node_props = {
-        'resource_config': {
-            'foo': 'bar'
-        }
-}
-instance_props = {
-        'foo': 'bar'
-}
-ctx = mock_context('test',
-                   'test',
-                   node_props,
-                   instance_props)
 
 
 @patch('cloudify_tg.utils.validate_resource_config')
 def test_configure_ctx(*_):
+    node_props = {
+        'resource_config': {
+            'foo': 'bar'
+        }
+    }
+    instance_props = {
+        'foo': 'bar'
+    }
+    ctx = mock_context('test_configure_ctx',
+                       'test_configure_ctx',
+                       node_props,
+                       instance_props)
 
-    result = utils.configure_ctx(ctx.instance, ctx.node)
+    result = configure_ctx(ctx.instance, ctx.node)
     assert ctx.instance.runtime_properties == {
         'foo': 'bar',
         'resource_config': {
@@ -33,24 +35,60 @@ def test_configure_ctx(*_):
 
 
 @patch('cloudify_tg.utils.validate_resource_config')
-@patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx)
 def test_validate_resource_config(*_):
-    ctx_test1 = utils.configure_ctx(ctx.instance, ctx.node)
-    ctx_test1.runtime_properties['resource_config'] = "abcd"
+    node_props = {
+        'resource_config': {
+            'foo': 'bar'
+        }
+    }
+    instance_props = {
+        'foo': 'bar'
+    }
+    ctx = mock_context('test_validate_resource_config',
+                       'test_validate_resource_config',
+                       node_props,
+                       instance_props)
+    ctx.instance.runtime_properties['resource_config'] = {'foo': 'bar'}
 
-    try:
-        utils.validate_resource_config()
-    except NonRecoverableError:
-        assert 'test_validate_resource_config'
+    @patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx)
+    def test_good():
+        try:
+            validate_resource_config()
+            assert True, 'no exceptions'
+        except NonRecoverableError:
+            assert False, 'except NonRecoverableError exception, Error'
 
+    ctx.instance.runtime_properties['resource_config'] = {'hello'}
 
-@patch('cloudify_tg.utils.get_ctx_node')
-@patch('cloudify_tg.utils.get_ctx_instance')
-@patch('cloudify_tg.utils.configure_ctx')
-@patch('cloudify_tg.utils.get_node_instance_dir')
-@patch('cloudify_tg.utils.Terragrunt')
-@patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
-@patch('cloudify_tg.utils.download_terragrunt_source')
-@patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
-def test_terragrunt_from_ctx():
-    print()
+    @patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx)
+    def test_bad():
+        try:
+            validate_resource_config()
+            assert False, 'need to raise exception NonRecoverableError'
+        except NonRecoverableError:
+            assert True, 'except NonRecoverableError exception, Good'
+
+#
+# @patch('cloudify_tg.utils.get_ctx_node')
+# @patch('cloudify_tg.utils.get_ctx_instance')
+# @patch('cloudify_tg.utils.configure_ctx')
+# @patch('cloudify_tg.utils.get_node_instance_dir')
+# @patch('cloudify_tg.utils.Terragrunt')
+# @patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
+# @patch('cloudify_tg.utils.download_terragrunt_source')
+# @patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
+# def test_terragrunt_from_ctx():
+#     pass
+#
+#
+# @patch('tg_sdk_utils.download_source')
+# @patch('cloudify_tg.utils.copy_directory')
+# @patch('cloudify_tg.utils.remove_directory')
+# def test_download_terragrunt_source():
+#     pass
+#
+#
+# @patch('cloudify_tg.utils.get_ctx_instance')
+# @patch('cloudify_tg.utils.get_ctx_node')
+# def test_get_terragrunt_source_config():
+#     pass

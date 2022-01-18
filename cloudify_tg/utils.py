@@ -4,15 +4,11 @@ from shutil import rmtree
 from cloudify import ctx as ctx_from_imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
-    mkdir_p,
     get_ctx_node,
-    download_file,
     run_subprocess,
     copy_directory,
-    set_permissions,
     get_ctx_instance,
     remove_directory,
-    get_deployment_dir,
     get_node_instance_dir,
 )
 

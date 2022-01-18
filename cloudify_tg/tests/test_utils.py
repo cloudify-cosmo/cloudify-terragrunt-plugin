@@ -1,7 +1,7 @@
 from mock import patch
 
 from . import mock_context
-from . import utils
+from .. import utils
 from tg_sdk import Terragrunt
 
 from cloudify.exceptions import NonRecoverableError

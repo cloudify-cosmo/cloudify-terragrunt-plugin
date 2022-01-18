@@ -4,13 +4,13 @@ from functools import wraps
 from cloudify import utils as cfy_utils
 from cloudify.exceptions import NonRecoverableError
 
-from .utils import terragrunt_from_ctx
+from . import utils
 
 
 def with_terragrunt(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        kwargs['tg'] = terragrunt_from_ctx(kwargs)
+        kwargs['tg'] = utils.terragrunt_from_ctx(kwargs)
         try:
             func(*args, **kwargs)
         except Exception as ex:

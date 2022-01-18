@@ -55,7 +55,13 @@ def test_validate_resource_config():
         except NonRecoverableError:
             assert True, 'except NonRecoverableError exception, Good'
 
-    ctx.instance.runtime_properties['resource_config'] = {'foo': 'bar'}
+    ctx.instance.runtime_properties['resource_config'] = {
+        'foo': 'bar',
+        'source_path': '',
+        'source': {
+            'location': 'foo'
+        }
+    }
 
     with patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx.instance):
         try:

@@ -18,14 +18,38 @@ from cloudify_common_sdk.utils import (
 
 from tg_sdk import Terragrunt, utils as tg_sdk_utils
 
+from .constants import MASKED_ENV_VARS
+
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
+
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
         ctx_instance.runtime_properties['resource_config'] = \
             resource_config or ctx_node.properties['resource_config']
+    update_terragrunt_binary(ctx_instance)
     validate_resource_config()
     return ctx_instance.runtime_properties['resource_config']
+
+
+def update_terragrunt_binary(ctx_instance):
+    terragrunt_nodes = find_rels_by_node_type(ctx_instance,
+                                              'cloudify.nodes.terragrunt')
+    if len(terragrunt_nodes) == 1:
+        ctx_instance.runtime_properties['resource_config']['binary_path'] = \
+            terragrunt_nodes[0].instance.runtime_properties['executable_path']
+    elif not len(terragrunt_nodes):
+        return
+    else:
+        raise NonRecoverableError(
+            'Only one relationship of type '
+            'cloudify.relationships.terragrunt.depends_on '
+            'to node type cloudify.nodes.terragrunt may be used per node.')
 
 
 def validate_resource_config():

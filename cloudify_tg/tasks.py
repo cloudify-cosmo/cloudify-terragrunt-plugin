@@ -1,6 +1,8 @@
+import os
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
+from . import utils
 from . import decorators
 from .constants import SUPPORTED_TG_COMMANDS_OPTIONS, SUPPORTED_TG_COMMANDS
 
@@ -101,3 +103,50 @@ def run_command(command, tg, options=None, force=False, *_, **__):
 
     tg.update_command_options({command: options})
     tg.execute(command)
+
+
+@operation
+@decorators.skip_if_existing
+def install(ctx, **_):
+    # folder
+    installation_dir = utils.get_node_instance_dir()
+    # The path to the terragrunt binary executable.
+    executable_path = utils.get_executable_path()
+    # Location to download the Terraform executable binary from.
+    installation_source = utils.get_installation_source()
+
+    if os.path.isfile(executable_path):
+        ctx.logger.info(
+            'Terragrunt executable already found at {path}; '
+            'skipping installation of executable'.format(
+                path=executable_path))
+    else:
+        ctx.logger.warn('You are requesting to write a new file to {loc}. '
+                        'If you do not have sufficient permissions, that '
+                        'installation will fail.'.format(
+                            loc=executable_path))
+
+        binary_name = "terragrunt"
+        utils.install_binary(os.path.join(installation_dir, binary_name),
+                             executable_path, installation_source)
+
+    ctx.instance.runtime_properties['executable_path'] = executable_path
+
+
+@operation
+@decorators.skip_if_existing
+def uninstall(ctx, **_):
+    terragrunt_config = utils.get_terragrunt_config()
+    resource_config = utils.get_resource_config()
+    exc_path = terragrunt_config.get('executable_path', '')
+    system_exc = resource_config.get('use_existing_resource')
+
+    if os.path.isfile(exc_path):
+        if system_exc:
+            ctx.logger.info(
+                'Not removing Terragrunt installation at {loc} as'
+                'it was provided externally'.format(loc=exc_path))
+        else:
+            ctx.logger.info('Removing executable: {path}'.format(
+                path=exc_path))
+            os.remove(exc_path)

@@ -8,11 +8,38 @@ from cloudify_common_sdk.utils import (
     run_subprocess,
     copy_directory,
     get_ctx_instance,
+    get_deployment_dir
+)
+from cloudify_common_sdk.processes import general_executor, process_execution, get_shared_resource
     remove_directory,
     get_node_instance_dir,
 )
 
-from tg_sdk import Terragrunt, utils as tg_sdk_utils
+from tg_sdk import Terragrunt
+
+
+def download_source(source, target_directory, logger):
+    logger.debug('Downloading {source} to {dest}.'.format(
+        source=source, dest=target_directory))
+    if isinstance(source, dict):
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory,
+            username=source.get('username'),
+            password=source.get('password'))
+    else:
+        source_tmp_path = get_shared_resource(
+            source, dir=target_directory)
+    logger.debug('Downloaded temporary source path {}'.format(source_tmp_path))
+    # Plugins must delete this.
+    return source_tmp_path
+
+from .constants import MASKED_ENV_VARS
+
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
@@ -20,8 +47,24 @@ def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     if 'resource_config' not in ctx_instance.runtime_properties:
         ctx_instance.runtime_properties['resource_config'] = \
             resource_config or ctx_node.properties['resource_config']
+    update_terragrunt_binary(ctx_instance)
     validate_resource_config()
     return ctx_instance.runtime_properties['resource_config']
+
+
+def update_terragrunt_binary(ctx_instance):
+    terragrunt_nodes = find_rels_by_node_type(ctx_instance,
+                                              'cloudify.nodes.terragrunt')
+    if len(terragrunt_nodes) == 1:
+        ctx_instance.runtime_properties['resource_config']['binary_path'] = \
+            terragrunt_nodes[0].instance.runtime_properties['executable_path']
+    elif not len(terragrunt_nodes):
+        return
+    else:
+        raise NonRecoverableError(
+            'Only one relationship of type '
+            'cloudify.relationships.terragrunt.depends_on '
+            'to node type cloudify.nodes.terragrunt may be used per node.')
 
 
 def validate_resource_config():
@@ -122,7 +165,7 @@ def download_terragrunt_source(source, target):
     ctx_from_imports.logger.info(
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
-    source_tmp_path = tg_sdk_utils.download_source(
+    source_tmp_path = download_source(
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
     remove_directory(source_tmp_path)

@@ -7,15 +7,21 @@ from cloudify_common_sdk.utils import (
     get_ctx_node,
     run_subprocess,
     copy_directory,
+    find_rel_by_type,
     get_ctx_instance,
-    get_deployment_dir
-)
-from cloudify_common_sdk.processes import general_executor, process_execution, get_shared_resource
     remove_directory,
     get_node_instance_dir,
+    find_rels_by_node_type
 )
+from cloudify_common_sdk.resource_downloader import get_shared_resource
 
 from tg_sdk import Terragrunt
+
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 
 def download_source(source, target_directory, logger):
@@ -33,14 +39,6 @@ def download_source(source, target_directory, logger):
     # Plugins must delete this.
     return source_tmp_path
 
-from .constants import MASKED_ENV_VARS
-
-try:
-    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
-except ImportError:
-    NODE_INSTANCE = 'node-instance'
-    RELATIONSHIP_INSTANCE = 'relationship-instance'
-
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
@@ -53,12 +51,12 @@ def configure_ctx(ctx_instance, ctx_node, resource_config=None):
 
 
 def update_terragrunt_binary(ctx_instance):
-    terragrunt_nodes = find_rels_by_node_type(ctx_instance,
-                                              'cloudify.nodes.terragrunt')
-    if len(terragrunt_nodes) == 1:
+    tg_nodes = find_rels_by_node_type(
+        ctx_instance, 'cloudify.nodes.terragrunt')
+    if len(tg_nodes) == 1:
         ctx_instance.runtime_properties['resource_config']['binary_path'] = \
-            terragrunt_nodes[0].instance.runtime_properties['executable_path']
-    elif not len(terragrunt_nodes):
+            tg_nodes[0].target.instance.runtime_properties['executable_path']
+    elif not len(tg_nodes):
         return
     else:
         raise NonRecoverableError(
@@ -125,7 +123,12 @@ def terragrunt_from_ctx(kwargs):
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
     # configure_binaries()
-    ctx_from_imports.logger.info('Initializing Terragrunt interface...')
+    ctx_from_imports.logger.info('**Initializing Terragrunt interface...')
+    ctx_from_imports.logger.info('**ctx_node.properties: {}.'
+                                 .format(ctx_node.properties))
+    ctx_from_imports.logger.info('**ctx.logger: {}.'.format(ctx.logger))
+    ctx_from_imports.logger.info('**get_node_instance_dir(): {}.'
+                                 .format(get_node_instance_dir()))
     tg = Terragrunt(
         ctx_node.properties,
         logger=ctx.logger,
@@ -134,7 +137,6 @@ def terragrunt_from_ctx(kwargs):
         **ctx_instance.runtime_properties['resource_config']
     )
     update_source = kwargs.get('update_source', False)
-    # TODO: Pass in test update_source== True and mock cleanup.... and just check calls
     if update_source:
         ctx_from_imports.logger.info(
             'Cleaning up previous Terragrunt workspace...')
@@ -159,9 +161,6 @@ def terragrunt_from_ctx(kwargs):
 def download_terragrunt_source(source, target):
     """Replace the terraform_source material with a new material.
     This is used in terraform.reload_template operation."""
-    # TODO: The test should patch('tg_sdk.utils.download_resource', return...)
-    # TODO: The return value should be a tempfile.mkdtemp ( source_tmp_path == tempfile.mkdtemp())
-    # TODO: In the test, we need to provide a target, tempfile.mkdtemp()
     ctx_from_imports.logger.info(
         'Using this cloudify.types.terragrunt.SourceSpecification '
         '{source}.'.format(source=source))
@@ -169,8 +168,6 @@ def download_terragrunt_source(source, target):
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
     remove_directory(source_tmp_path)
-    # TODO: Then we compare target to see that source_tmp_path is in the target.
-    # TODO: And also check that source_tmp_path is deleted.
 
 
 def get_terragrunt_source_config(new_source_config=False):
@@ -204,3 +201,33 @@ def cleanup_old_terragrunt_source():
             rmtree(path)
         except OSError:
             os.remove(path)
+
+
+def is_using_existing():
+    """Decide if we need to do this work or not."""
+    resource_config = get_resource_config()
+    return resource_config.get('use_existing_resource', True)
+
+
+def find_terragrunt_node_from_rel():
+    return find_rel_by_type(
+        ctx_from_imports.instance,
+        'cloudify.terragrunt.relationships.run_on_host')
+
+
+def get_property(property_name, ctx_node=None, ctx_instance=None):
+    ctx_node = ctx_node or ctx_from_imports.node
+    ctx_instance = ctx_instance or ctx_from_imports.instance
+    from_props = ctx_node.properties.get(property_name)
+    from_runtime_props = ctx_instance.runtime_properties.get(property_name)
+    if from_runtime_props:
+        return from_runtime_props
+    return from_props
+
+
+def get_terragrunt_config():
+    return get_property('terragrunt_config')
+
+
+def get_resource_config():
+    return get_property('resource_config')

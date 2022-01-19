@@ -2,6 +2,8 @@ import os
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
+from cloudify_common_sdk import utils as sdk_utils
+
 from . import utils
 from . import decorators
 from .constants import SUPPORTED_TG_COMMANDS_OPTIONS, SUPPORTED_TG_COMMANDS
@@ -109,11 +111,17 @@ def run_command(command, tg, options=None, force=False, *_, **__):
 @decorators.skip_if_existing
 def install(ctx, **_):
     # folder
-    installation_dir = utils.get_node_instance_dir()
+    installation_dir = sdk_utils.get_node_instance_dir()
     # The path to the terragrunt binary executable.
-    executable_path = utils.get_executable_path()
+    terragrunt_config = utils.get_terragrunt_config()
+    resource_config = utils.get_resource_config()
+
+    executable_path = terragrunt_config.get(
+        'executable_path',
+        os.path.join(sdk_utils.get_node_instance_dir(), 'terragrunt'))
+
     # Location to download the Terraform executable binary from.
-    installation_source = utils.get_installation_source()
+    installation_source = resource_config.get('installation_source')
 
     if os.path.isfile(executable_path):
         ctx.logger.info(
@@ -127,8 +135,8 @@ def install(ctx, **_):
                             loc=executable_path))
 
         binary_name = "terragrunt"
-        utils.install_binary(os.path.join(installation_dir, binary_name),
-                             executable_path, installation_source)
+        sdk_utils.install_binary(os.path.join(installation_dir, binary_name),
+                                 executable_path, installation_source)
 
     ctx.instance.runtime_properties['executable_path'] = executable_path
 

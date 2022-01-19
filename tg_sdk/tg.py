@@ -74,8 +74,11 @@ class Terragrunt(object):
 
         :return: str
         """
-        self._resource_config['source_path'] = value
-        self._source_path = value
+        if os.path.exists(value):
+            self._source_path = value
+            props = self.properties.get('resource_config', {})
+            props['source_path'] = value
+
 
     @property
     def binary_path(self):
@@ -125,15 +128,18 @@ class Terragrunt(object):
         return utils.get_version_string(
             self._execute([self.binary_path, '--version']))
 
-    def _execute(self, command, return_output):
-        args = [command]
+    def _execute(self, command, return_output=True):
+        if isinstance(command, list):
+            args = command
+        else:
+            args = [command]
         kwargs = {'logger': self.logger}
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
             kwargs['additional_env'] = self.environment_variables
         kwargs['return_output'] = return_output
-        return self.executor(*args, **kwargs)
+        return self.executor(args, **kwargs)
 
     def execute(self, name, return_output=True):
         command = [self.binary_path, name]

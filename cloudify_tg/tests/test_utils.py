@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 from mock import patch
 
 from . import mock_context
@@ -33,22 +36,23 @@ def test_configure_ctx(*_):
 
 
 def test_validate_resource_config():
-    node_props = {
+    properties = {
         'resource_config': {
             'foo': 'bar'
         }
     }
-    instance_props = {
+    runtime_properties = {
         'foo': 'bar'
     }
     ctx = mock_context('test_validate_resource_config',
                        'test_validate_resource_config',
-                       node_props,
-                       instance_props)
+                       properties,
+                       runtime_properties)
 
-    ctx.instance.runtime_properties['resource_config'] = {'hello'}
+    # ctx.instance.runtime_properties['resource_config'] = {'hello'}
 
-    with patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx.instance):
+    with patch('cloudify_tg.utils.get_ctx_instance',
+               return_value=ctx.instance):
         try:
             utils.validate_resource_config()
             assert False, 'need to raise exception NonRecoverableError'
@@ -59,39 +63,138 @@ def test_validate_resource_config():
         'foo': 'bar',
         'source_path': '',
         'source': {
-            'location': 'foo'
+            'location': 'foo.zip'
         }
     }
 
-    with patch('cloudify_tg.utils.get_ctx_instance', return_value=ctx.instance):
+    with patch('cloudify_tg.utils.get_ctx_instance',
+               return_value=ctx.instance):
         try:
             utils.validate_resource_config()
             assert True, 'no exceptions'
-        except NonRecoverableError:
-            assert False, 'except NonRecoverableError exception, Error'
-
-
-@patch('cloudify_tg.utils.get_ctx_node')
-@patch('cloudify_tg.utils.get_ctx_instance')
-@patch('cloudify_tg.utils.configure_ctx')
-@patch('cloudify_tg.utils.get_node_instance_dir')
-@patch('cloudify_tg.utils.Terragrunt')
-@patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
-@patch('cloudify_tg.utils.download_terragrunt_source')
-@patch('cloudify_tg.utils.cleanup_old_terragrunt_source')
-def test_terragrunt_from_ctx():
-    tg = utils.terragrunt_from_ctx()
-    assert isinstance(tg, Terragrunt)
+        except NonRecoverableError as e:
+            assert False, '{}'.format(e)
 
 #
-# @patch('tg_sdk_utils.download_source')
-# @patch('cloudify_tg.utils.copy_directory')
-# @patch('cloudify_tg.utils.remove_directory')
+# def test_terragrunt_from_ctx():
+#     properties = {
+#         'resource_config': {
+#             'foo': 'bar'
+#         }
+#     }
+#     runtime_properties = {
+#         'foo': 'test2',
+#         'source_path': '',
+#         'resource_config': {
+#             'foo': 'bar',
+#             'source': {
+#                 'location': 'test2.zip'
+#             }
+#         },
+#         'source': {
+#             'location': 'test2.zip'
+#         }
+#     }
+#     ctx = mock_context('test_terragrunt_from_ctx',
+#                        'test_terragrunt_from_ctx',
+#                        properties,
+#                        runtime_properties)
+#     kwargs = {'ctx': ctx.instance}
+#     with patch('cloudify_tg.utils.get_ctx_node', return_value=ctx.instance) \
+#          and patch('cloudify_tg.utils.get_ctx_instance',
+#                    return_value=ctx.instance) and \
+#          patch('cloudify_tg.utils.configure_ctx') and \
+#          patch('cloudify_tg.utils.get_node_instance_dir') and \
+#          patch('cloudify_tg.utils.Terragrunt') and \
+#          patch('cloudify_tg.utils.cleanup_old_terragrunt_source') and \
+#          patch('cloudify_tg.utils.download_terragrunt_source') and \
+#          patch('cloudify_tg.utils.validate_resource_config') and \
+#          patch('cloudify_tg.utils.cleanup_old_terragrunt_source'):
+#         tg = utils.terragrunt_from_ctx(kwargs)
+#         assert isinstance(tg, Terragrunt)
+
+
 # def test_download_terragrunt_source():
-#     pass
+#     source = 'foobar'
+#     target = tempfile.mkdtemp()
+#     test_source_tmp_path = tempfile.mkdtemp()
+#
+#     with patch('cloudify_tg.utils.tg_sdk_utils.download_source',
+#                return_value=test_source_tmp_path) and \
+#          patch('cloudify_tg.utils.get_node_instance_dir',
+#                return_value=test_source_tmp_path):
+#
+#         utils.download_terragrunt_source(source, target)
+#         try:
+#             assert not os.path.exists(os.path.basename(test_source_tmp_path))
+#         except AssertionError:
+#             os.remove(test_source_tmp_path)
+#             assert False, '{}'.format(str(AssertionError))
+#     assert os.path.basename(test_source_tmp_path) in os.listdir(target),\
+#         '{}, {}'.format(
+#             os.path.basename(test_source_tmp_path), os.listdir(target))
+#
+#     os.remove(target)
 
 
-@patch('cloudify_tg.utils.get_ctx_instance')
-@patch('cloudify_tg.utils.get_ctx_node')
 def test_get_terragrunt_source_config():
-    resalt = utils.get_terragrunt_source_config()
+    new_source_config = {
+        'foo': 'test1',
+        'source_path': '',
+        'resource_config': {
+            'foo': 'bar'
+        },
+        'source': {
+            'location': 'test1.zip'
+        }
+    }
+
+    properties = {
+        'resource_config': {
+            'foo': 'bar'
+        }
+    }
+    runtime_properties = {
+        'foo': 'test2',
+        'source_path': '',
+        'resource_config': {
+            'foo': 'bar',
+            'source': {
+                'location': 'test2.zip'
+            }
+        },
+        'source': {
+            'location': 'test2.zip'
+        }
+    }
+    ctx = mock_context('test_get_terragrunt_source_config',
+                       'test_get_terragrunt_source_config',
+                       properties,
+                       runtime_properties)
+
+    with patch('cloudify_tg.utils.get_ctx_instance',
+               return_vlaue=ctx.instance) and \
+         patch('cloudify_tg.utils.get_ctx_node', return_vlaue=ctx.node):
+
+        source = utils.get_terragrunt_source_config()
+        assert source == runtime_properties['source']
+        source = utils.get_terragrunt_source_config(new_source_config)
+        assert source == new_source_config, 'source: {}'.format(source)
+
+
+def test_cleanup_old_terragrunt_source():
+    node_instance_dir = tempfile.mkdtemp()
+    try:
+        f = open(os.path.join(node_instance_dir, 'readme.txt'), 'w')
+        f.close()
+    except FileNotFoundError:
+        print("The 'docs' directory does not exist")
+
+    assert os.path.exists(node_instance_dir)
+    assert len(os.listdir(node_instance_dir)) == 1
+
+    with patch('cloudify_tg.utils.get_node_instance_dir',
+               return_value=node_instance_dir):
+        utils.cleanup_old_terragrunt_source()
+
+    assert len(os.listdir(node_instance_dir)) == 0

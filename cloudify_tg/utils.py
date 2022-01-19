@@ -29,6 +29,11 @@ def validate_resource_config():
     ctx_from_imports.logger.info('Validating resource_config...')
     i = 0  # "Error 1" is more readable.
     errors = []
+    if 'resource_config' not in ctx_instance.runtime_properties:
+        raise NonRecoverableError(
+            'Error {i} - No resource_config was provided, {sp}, is invalid. '
+            .format(i=i, sp=ctx_instance.runtime_properties))
+
     resource_config = ctx_instance.runtime_properties['resource_config']
     if 'source_path' not in resource_config:
         i += 1
@@ -36,30 +41,32 @@ def validate_resource_config():
             'Error {i} - No source path was provided, {sp}, is invalid. '\
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
-    elif resource_config['source_path'].startswith('/') and \
-            ctx_instance.id not in resource_config['source_path']:
-        i += 1
-        message = \
-            'Error {i} - The source_path provided, {sp}. ' \
-            'The path should be relative to the source location root.'.format(
-                i=i, sp=resource_config['source_path'])
-        errors.append(message)
+    else:
+        if resource_config['source_path'].startswith('/') and \
+                ctx_instance.id not in resource_config['source_path']:
+            i += 1
+            message = \
+                'Error {i} - The source_path provided, {sp}. ' \
+                'The path should be relative to the source location root.'\
+                .format(i=i, sp=resource_config['source_path'])
+            errors.append(message)
     if 'source' not in resource_config:
         i += 1
         message = \
             'Error {i} - No source was provided, {sp}. '\
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
-    if isinstance(resource_config['source'], dict) and not \
-            resource_config['source'].get('location', '').endswith('.zip') or \
-            isinstance(resource_config['source'], str) and not \
-            resource_config['source'].endswith('.zip'):
-        i += 1
-        message = \
-            'Error {i} - The source location provided, {s}, is invalid. ' \
-            'Only zip archives are currently supported.'.format(
-                i=i, s=resource_config['source'])
-        errors.append(message)
+    else:
+        if isinstance(resource_config['source'], dict) and not \
+                resource_config['source'].get('location', '').endswith('.zip')\
+                or isinstance(resource_config['source'], str) and not \
+                resource_config['source'].endswith('.zip'):
+            i += 1
+            message = \
+                'Error {i} - The source location provided, {s}, is invalid. ' \
+                'Only zip archives are currently supported.'.format(
+                    i=i, s=resource_config['source'])
+            errors.append(message)
     if i > 0:
         raise NonRecoverableError(
             'The resource_config provided failed to pass validation: '
@@ -141,9 +148,7 @@ def get_terragrunt_source_config(new_source_config=False):
     return node_props['source']
 
 
-# TODO: Write test for cleanup....
 def cleanup_old_terragrunt_source():
-    # TODO: Mock get_node_isntance_dir with mkdtemp()
     node_instance_dir = get_node_instance_dir()
     paths_to_delete = []
     for files in os.listdir(node_instance_dir):

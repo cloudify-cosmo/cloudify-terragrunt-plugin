@@ -137,7 +137,7 @@ def test__execute():
                     executor=mocked_executor)
     tg._execute('foo', False)
     mocked_executor.assert_called_once_with(
-        ['foo'],
+        'foo',
         logger=tg.logger,
         additional_env=tg.environment_variables,
         return_output=False
@@ -342,4 +342,3 @@ def test_terraform_output():
     result = tg.output()
 
     assert tg.terraform_output == result
-

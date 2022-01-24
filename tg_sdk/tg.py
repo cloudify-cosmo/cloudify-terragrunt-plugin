@@ -129,17 +129,18 @@ class Terragrunt(object):
             self._execute([self.binary_path, '--version']))
 
     def _execute(self, command, return_output=True):
-        if isinstance(command, list):
-            args = command
-        else:
-            args = [command]
+        args = [command]
+        # if isinstance(command, list):
+        #     args = command
+        # else:
+        #     args = [command]
         kwargs = {'logger': self.logger}
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
             kwargs['additional_env'] = self.environment_variables
         kwargs['return_output'] = return_output
-        return self.executor(args, **kwargs)
+        return self.executor(*args, **kwargs)
 
     def execute(self, name, return_output=True):
         command = [self.binary_path, name]

@@ -1,4 +1,5 @@
 # cloudify-utilities-plugins-sdk>=0.0.47
+https://github.com/cloudify-incubator/cloudify-utilities-plugins-sdk/archive/refs/heads/RD-3872-install-binary.zip
 urllib3==1.24.3
 networkx==1.9.1
 cryptography>=3.3.2

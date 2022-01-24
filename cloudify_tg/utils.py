@@ -4,22 +4,24 @@ from shutil import rmtree
 from cloudify import ctx as ctx_from_imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
-    mkdir_p,
     get_ctx_node,
-    download_file,
     run_subprocess,
     copy_directory,
-    set_permissions,
+    find_rel_by_type,
     get_ctx_instance,
-    get_deployment_dir
-)
-from cloudify_common_sdk.processes import general_executor, process_execution, get_shared_resource
     remove_directory,
-    get_deployment_dir,
     get_node_instance_dir,
+    find_rels_by_node_type
 )
+from cloudify_common_sdk.resource_downloader import get_shared_resource
 
 from tg_sdk import Terragrunt
+
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 
 def download_source(source, target_directory, logger):
@@ -37,14 +39,6 @@ def download_source(source, target_directory, logger):
     # Plugins must delete this.
     return source_tmp_path
 
-from .constants import MASKED_ENV_VARS
-
-try:
-    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
-except ImportError:
-    NODE_INSTANCE = 'node-instance'
-    RELATIONSHIP_INSTANCE = 'relationship-instance'
-
 
 def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
@@ -57,12 +51,12 @@ def configure_ctx(ctx_instance, ctx_node, resource_config=None):
 
 
 def update_terragrunt_binary(ctx_instance):
-    terragrunt_nodes = find_rels_by_node_type(ctx_instance,
-                                              'cloudify.nodes.terragrunt')
-    if len(terragrunt_nodes) == 1:
+    tg_nodes = find_rels_by_node_type(
+        ctx_instance, 'cloudify.nodes.terragrunt')
+    if len(tg_nodes) == 1:
         ctx_instance.runtime_properties['resource_config']['binary_path'] = \
-            terragrunt_nodes[0].instance.runtime_properties['executable_path']
-    elif not len(terragrunt_nodes):
+            tg_nodes[0].target.instance.runtime_properties['executable_path']
+    elif not len(tg_nodes):
         return
     else:
         raise NonRecoverableError(
@@ -76,25 +70,44 @@ def validate_resource_config():
     ctx_from_imports.logger.info('Validating resource_config...')
     i = 0  # "Error 1" is more readable.
     errors = []
+    if 'resource_config' not in ctx_instance.runtime_properties:
+        raise NonRecoverableError(
+            'Error {i} - No resource_config was provided, {sp}, is invalid. '
+            .format(i=i, sp=ctx_instance.runtime_properties))
+
     resource_config = ctx_instance.runtime_properties['resource_config']
-    if resource_config['source_path'].startswith('/') and \
-            ctx_instance.id not in resource_config['source_path']:
+    if 'source_path' not in resource_config:
         i += 1
         message = \
-            'Error {i} - The source_path provided, {sp}, is invalid. ' \
-            'The path should be relative to the source location root.'.format(
-                i=i, sp=resource_config['source_path'])
+            'Error {i} - No source path was provided, {sp}, is invalid. '\
+            .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
-    if isinstance(resource_config['source'], dict) and not \
-            resource_config['source'].get('location', '').endswith('.zip') or \
-            isinstance(resource_config['source'], str) and not \
-            resource_config['source'].endswith('.zip'):
+    else:
+        if resource_config['source_path'].startswith('/') and \
+                ctx_instance.id not in resource_config['source_path']:
+            i += 1
+            message = \
+                'Error {i} - The source_path provided, {sp}. ' \
+                'The path should be relative to the source location root.'\
+                .format(i=i, sp=resource_config['source_path'])
+            errors.append(message)
+    if 'source' not in resource_config:
         i += 1
         message = \
-            'Error {i} - The source location provided, {s}, is invalid. ' \
-            'Only zip archives are currently supported.'.format(
-                i=i, s=resource_config['source'])
+            'Error {i} - No source was provided, {sp}. '\
+            .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
+    else:
+        if isinstance(resource_config['source'], dict) and not \
+                resource_config['source'].get('location', '').endswith('.zip')\
+                or isinstance(resource_config['source'], str) and not \
+                resource_config['source'].endswith('.zip'):
+            i += 1
+            message = \
+                'Error {i} - The source location provided, {s}, is invalid. ' \
+                'Only zip archives are currently supported.'.format(
+                    i=i, s=resource_config['source'])
+            errors.append(message)
     if i > 0:
         raise NonRecoverableError(
             'The resource_config provided failed to pass validation: '
@@ -110,7 +123,12 @@ def terragrunt_from_ctx(kwargs):
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
     # configure_binaries()
-    ctx_from_imports.logger.info('Initializing Terragrunt interface...')
+    ctx_from_imports.logger.info('**Initializing Terragrunt interface...')
+    ctx_from_imports.logger.info('**ctx_node.properties: {}.'
+                                 .format(ctx_node.properties))
+    ctx_from_imports.logger.info('**ctx.logger: {}.'.format(ctx.logger))
+    ctx_from_imports.logger.info('**get_node_instance_dir(): {}.'
+                                 .format(get_node_instance_dir()))
     tg = Terragrunt(
         ctx_node.properties,
         logger=ctx.logger,
@@ -183,3 +201,33 @@ def cleanup_old_terragrunt_source():
             rmtree(path)
         except OSError:
             os.remove(path)
+
+
+def is_using_existing():
+    """Decide if we need to do this work or not."""
+    resource_config = get_resource_config()
+    return resource_config.get('use_existing_resource', True)
+
+
+def find_terragrunt_node_from_rel():
+    return find_rel_by_type(
+        ctx_from_imports.instance,
+        'cloudify.terragrunt.relationships.run_on_host')
+
+
+def get_property(property_name, ctx_node=None, ctx_instance=None):
+    ctx_node = ctx_node or ctx_from_imports.node
+    ctx_instance = ctx_instance or ctx_from_imports.instance
+    from_props = ctx_node.properties.get(property_name)
+    from_runtime_props = ctx_instance.runtime_properties.get(property_name)
+    if from_runtime_props:
+        return from_runtime_props
+    return from_props
+
+
+def get_terragrunt_config():
+    return get_property('terragrunt_config')
+
+
+def get_resource_config():
+    return get_property('resource_config')

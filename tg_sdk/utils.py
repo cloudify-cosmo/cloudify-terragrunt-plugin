@@ -1,3 +1,4 @@
+import os
 import re
 import logging
 from contextlib import contextmanager
@@ -43,7 +44,8 @@ def get_version_string(output):
 
 @contextmanager
 def yield_file(content):
-    with NamedTemporaryFile() as f:
+    with NamedTemporaryFile(delete=False, mode='w') as f:
         f.write(content)
-        f.flush()
+        f.close()
         yield f.name
+    os.remove(f.name)

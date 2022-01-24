@@ -1,0 +1,2 @@
+# cloudify-utilities-plugins-sdk
+https://github.com/cloudify-incubator/cloudify-utilities-plugins-sdk/archive/refs/heads/RD-3872-install-binary.zip

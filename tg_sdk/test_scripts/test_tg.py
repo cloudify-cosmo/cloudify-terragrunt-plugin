@@ -38,6 +38,3 @@ if __name__ == '__main__':
     # terragrunt.apply()
     # terragrunt.destroy()
     # terragrunt.output()
-
-
-

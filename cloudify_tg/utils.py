@@ -123,12 +123,7 @@ def terragrunt_from_ctx(kwargs):
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
     # configure_binaries()
-    ctx_from_imports.logger.info('**Initializing Terragrunt interface...')
-    ctx_from_imports.logger.info('**ctx_node.properties: {}.'
-                                 .format(ctx_node.properties))
-    ctx_from_imports.logger.info('**ctx.logger: {}.'.format(ctx.logger))
-    ctx_from_imports.logger.info('**get_node_instance_dir(): {}.'
-                                 .format(get_node_instance_dir()))
+    ctx_from_imports.logger.info('Initializing Terragrunt interface...')
     tg = Terragrunt(
         ctx_node.properties,
         logger=ctx.logger,
@@ -167,7 +162,8 @@ def download_terragrunt_source(source, target):
     source_tmp_path = download_source(
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
-    remove_directory(source_tmp_path)
+    path_to_rm = os.path.normpath(source_tmp_path + os.sep + os.pardir)
+    remove_directory(path_to_rm)
 
 
 def get_terragrunt_source_config(new_source_config=False):

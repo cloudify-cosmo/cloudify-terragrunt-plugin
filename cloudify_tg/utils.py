@@ -162,7 +162,7 @@ def download_terragrunt_source(source, target):
     source_tmp_path = download_source(
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
-    path_to_rm = os.path.normpath(source_tmp_path + os.sep + os.pardir)
+    path_to_rm = os.path.dirname(source_tmp_path)
     remove_directory(path_to_rm)
 
 

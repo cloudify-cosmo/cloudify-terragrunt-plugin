@@ -30,7 +30,7 @@ commands:
 
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -es aws_region_name=us-east-1 --bundle-path workspace/build/cloudify-plugins-bundle-v2.tgz -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=us-east-1 --bundle-path workspace/build/cloudify-plugins-bundle-v2.tgz -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml
 
   run_tf_vm_test:
     steps:
@@ -75,12 +75,12 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-      - integration_tests_py3:
-          requires:
-            - wagonorb/build_bundle
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|main|dev)/
+#      - integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|main|dev)/
       - releaseorb/release:
           filters:
             branches:
@@ -91,7 +91,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-            - integration_tests_py3
+            # - integration_tests_py3
       - releaseorb/merge_docs_job:
           filters:
             branches:

@@ -6,6 +6,8 @@ description: >
 imports:
   - https://cloudify.co/spec/cloudify/6.2.0/types.yaml
   - plugin:cloudify-terragrunt-plugin
+  - plugin:cloudify-terraform-plugin
+
 
 inputs:
 
@@ -15,6 +17,12 @@ inputs:
     default: https://github.com/EarthmanT/terragrunt-example/archive/refs/heads/main.zip
 
 node_templates:
+
+  terragrunt:
+    type: cloudify.nodes.terragrunt
+
+  terraform:
+    type: cloudify.nodes.terraform
 
   Stack:
     type: cloudify.nodes.terragrunt.Stack
@@ -28,6 +36,5 @@ node_templates:
     relationships:
       - target: terragrunt
         type: cloudify.relationships.terragrunt.depends_on
-
-  terragrunt:
-    type: cloudify.nodes.terragrunt
+      - target: terraform
+        type: cloudify.relationships.terraform.depends_on

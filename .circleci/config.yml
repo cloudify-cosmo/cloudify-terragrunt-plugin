@@ -75,12 +75,12 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-      - integration_tests_py3:
-          requires:
-            - wagonorb/build_bundle
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|main|dev)/
+#      - integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|main|dev)/
       - releaseorb/release:
           filters:
             branches:
@@ -91,7 +91,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-            - integration_tests_py3
+            # - integration_tests_py3
       - releaseorb/merge_docs_job:
           filters:
             branches:

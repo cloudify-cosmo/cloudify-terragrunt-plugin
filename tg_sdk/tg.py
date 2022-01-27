@@ -10,6 +10,7 @@ class Terragrunt(object):
                  properties,
                  logger=None,
                  executor=None,
+                 mask_env_vars=None,
                  *args,
                  **kwargs):
         self._properties = properties
@@ -26,6 +27,7 @@ class Terragrunt(object):
         self._terraform_plan = None
         self._terraform_output = []
         self._run_all = None
+        self.mask_env_vars = mask_env_vars
 
     @property
     def properties(self):

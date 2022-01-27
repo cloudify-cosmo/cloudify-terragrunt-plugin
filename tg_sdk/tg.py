@@ -132,16 +132,15 @@ class Terragrunt(object):
 
     def _execute(self, command, return_output=True):
         args = [command]
-        # if isinstance(command, list):
-        #     args = command
-        # else:
-        #     args = [command]
         kwargs = {'logger': self.logger}
         if self.cwd:
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
             kwargs['additional_env'] = self.environment_variables
+        if self.mask_env_vars:
+            kwargs['mask_env_vars'] = self.mask_env_vars
         kwargs['return_output'] = return_output
+
         return self.executor(*args, **kwargs)
 
     def execute(self, name, return_output=True):

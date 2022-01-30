@@ -123,6 +123,8 @@ def terragrunt_from_ctx(kwargs):
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
     mask_env_vars = ctx_node.properties.get('mask_env_vars', [])
+    ctx_from_imports.logger.info('**mask_env_vars:{}'.format(mask_env_vars))
+
     # configure_binaries()
     ctx_from_imports.logger.info('Initializing Terragrunt interface...')
     tg = Terragrunt(

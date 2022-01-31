@@ -122,8 +122,11 @@ def terragrunt_from_ctx(kwargs):
     ctx = _ctx or ctx_from_imports
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
-    mask_env_vars = ctx_node.properties.get('mask_env_vars', [])
-    ctx_from_imports.logger.info('**mask_env_vars:{}'.format(mask_env_vars))
+    masked_env_vars = ctx_node.properties['resource_config'].get('mask_env_vars')
+    ctx_from_imports.logger.info('**ctx_node.properties:{}'.format(ctx_node.properties))
+    ctx_from_imports.logger.info('**mask_env_vars:{}'.format(masked_env_vars))
+
+    ctx_from_imports.logger.info('**ctx_instance.runtime_properties[]:{}'.format(ctx_instance.runtime_properties['resource_config']))
 
     # configure_binaries()
     ctx_from_imports.logger.info('Initializing Terragrunt interface...')
@@ -132,7 +135,7 @@ def terragrunt_from_ctx(kwargs):
         logger=ctx.logger,
         executor=run_subprocess,
         cwd=get_node_instance_dir(),
-        mask_env_vars=mask_env_vars,
+        masked_env_vars=masked_env_vars,
         **ctx_instance.runtime_properties['resource_config']
     )
     update_source = kwargs.get('update_source', False)

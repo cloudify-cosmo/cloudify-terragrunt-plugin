@@ -10,7 +10,7 @@ class Terragrunt(object):
                  properties,
                  logger=None,
                  executor=None,
-                 mask_env_vars=None,
+                 masked_env_vars=None,
                  *args,
                  **kwargs):
         self._properties = properties
@@ -27,7 +27,7 @@ class Terragrunt(object):
         self._terraform_plan = None
         self._terraform_output = []
         self._run_all = None
-        self.mask_env_vars = mask_env_vars
+        self.masked_env_vars = masked_env_vars or []
 
     @property
     def properties(self):
@@ -137,8 +137,8 @@ class Terragrunt(object):
             kwargs['cwd'] = self.cwd
         if self.environment_variables:
             kwargs['additional_env'] = self.environment_variables
-        if self.mask_env_vars:
-            kwargs['mask_env_vars'] = self.mask_env_vars
+        if self.masked_env_vars:
+            kwargs['masked_env_vars'] = self.masked_env_vars
         kwargs['return_output'] = return_output
 
         return self.executor(*args, **kwargs)

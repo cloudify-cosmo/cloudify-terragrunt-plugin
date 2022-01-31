@@ -70,7 +70,8 @@ def update_terraform_binary(ctx_instance):
     tg_nodes = find_rels_by_node_type(
         ctx_instance, 'cloudify.nodes.terraform')
     if len(tg_nodes) == 1:
-        ctx_instance.runtime_properties['resource_config']['binary_path'] = \
+        ctx_instance.runtime_properties['resource_config']['terraform_'
+                                                           'binary_path'] = \
             tg_nodes[0].target.instance.runtime_properties['executable_path']
     elif not len(tg_nodes):
         return

@@ -139,6 +139,7 @@ def terragrunt_from_ctx(kwargs):
     ctx = _ctx or ctx_from_imports
     configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
+
     # configure_binaries()
     ctx_from_imports.logger.info('Initializing Terragrunt interface...')
     tg = Terragrunt(

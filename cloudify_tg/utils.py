@@ -45,6 +45,7 @@ def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     if 'resource_config' not in ctx_instance.runtime_properties:
         ctx_instance.runtime_properties['resource_config'] = \
             resource_config or ctx_node.properties['resource_config']
+    update_terraform_binary(ctx_instance)
     update_terragrunt_binary(ctx_instance)
     validate_resource_config()
     return ctx_instance.runtime_properties['resource_config']
@@ -63,6 +64,22 @@ def update_terragrunt_binary(ctx_instance):
             'Only one relationship of type '
             'cloudify.relationships.terragrunt.depends_on '
             'to node type cloudify.nodes.terragrunt may be used per node.')
+
+
+def update_terraform_binary(ctx_instance):
+    tg_nodes = find_rels_by_node_type(
+        ctx_instance, 'cloudify.nodes.terraform')
+    if len(tg_nodes) == 1:
+        ctx_instance.runtime_properties['resource_config']['terraform_'
+                                                           'binary_path'] = \
+            tg_nodes[0].target.instance.runtime_properties['executable_path']
+    elif not len(tg_nodes):
+        return
+    else:
+        raise NonRecoverableError(
+            'Only one relationship of type '
+            'cloudify.relationships.terraform.depends_on '
+            'to node type cloudify.nodes.terraform may be used per node.')
 
 
 def validate_resource_config():

@@ -1,0 +1,67 @@
+                '''Examples of execution commands '''
+
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+    command: "graph-dependencies"
+    options: ["-json"]
+    force: true
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "apply"
+      options: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-auto-approve"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "destroy"
+      options: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-auto-approve"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "plan"
+      options: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-json"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "output"
+      options: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug", "-json"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "terragrunt-info"
+      options: ["-json"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "validate-inputs"
+      options: ["-json"]
+node_ids: '["<node id>"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "graph-dependencies"
+      options: ["-json"]
+node_ids: '["terraform"]'
+-------------------------------------------------------------------------------
+
+operation: run_command
+operation_kwargs:
+      command: "render-json"
+      options: ["-json"]
+node_ids: '["terraform"]'
+allow_kwargs_override: True

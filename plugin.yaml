@@ -101,7 +101,7 @@ relationships:
     derived_from: cloudify.relationships.depends_on
 
   cloudify.relationships.terraform.depends_on:
-     derived_from: cloudify.relationships.depends_on
+    derived_from: cloudify.relationships.depends_on
 
 node_types:
 

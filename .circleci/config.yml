@@ -1,10 +1,10 @@
 version: 2.1
 
 orbs:
-  node: cloudify/public-unittest-orb@1.0.3 #orb version
-  wagonorb: cloudify/wagon-bulder-orb@1.0.4 #orb version
-  releaseorb: cloudify/release-orb@1.0.6 #orb version
-  managerorb: cloudify/manager-orb@1.0.2
+  node: cloudify/public-unittest-orb@1 #orb version
+  wagonorb: cloudify/wagon-bulder-orb@1 #orb version
+  releaseorb: cloudify/release-orb@1 #orb version
+  managerorb: cloudify/manager-orb@1
 
 checkout:
   post:
@@ -30,10 +30,11 @@ commands:
 
   prepare_test_manager:
     steps:
-- run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=us-east-1 --bundle-path workspace/build/cloudify-plugins-bundle-v2.tgz -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml -p https://github.com/cloudify-cosmo/cloudify-terraform-plugin/releases/download/latest/cloudify_terraform_plugin-0.18.8-centos-altarch-py36-none-linux_aarch64.wgn https://github.com/cloudify-cosmo/cloudify-terraform-plugin/blob/c8dd0682582b9596fd2f022e63e17c51f32b510c/plugin.yaml
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=us-east-1 --bundle-path workspace/build/cloudify-plugins-bundle-v2.tgz -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml --yum-package git
+
   run_tf_vm_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=aws --on-failure=uninstall-force --timeout=1800
+      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800
 
 jobs:
   integration_tests_py3:
@@ -90,7 +91,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-            # - integration_tests_py3
+            - integration_tests_py3
       - releaseorb/merge_docs_job:
           filters:
             branches:

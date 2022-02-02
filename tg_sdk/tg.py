@@ -18,9 +18,10 @@ class Terragrunt(object):
         self._additional_args = args
         self._additional_kwargs = kwargs
         self._resource_config = None
-        self._source = None
+        self._source = kwargs.get('source')
         self._source_path = None
-        self._binary_path = None
+        self._binary_path = kwargs.get('binary_path')
+        self._terraform_binary_path = kwargs.get('terraform_binary_path')
         self._command_options = {}
         self.executor = executor or utils.basic_executor
         self.cwd = kwargs.get('cwd')
@@ -81,7 +82,6 @@ class Terragrunt(object):
             props = self.properties.get('resource_config', {})
             props['source_path'] = value
 
-
     @property
     def binary_path(self):
         """The local path on the manager to the Terragrunt binary
@@ -89,11 +89,25 @@ class Terragrunt(object):
 
         :return: str
         """
-        return self.resource_config.get('binary_path')
+        if not self._binary_path:
+            self._binary_path = self.resource_config.get('binary_path')
+        return self._binary_path
+
+    @binary_path.setter
+    def binary_path(self, value):
+        self._binary_path = value
 
     @property
     def terraform_binary_path(self):
-        return self.resource_config.get('terraform_binary_path')
+        if not self._terraform_binary_path:
+            self._terraform_binary_path = self.resource_config.get(
+                'terraform_binary_path')
+
+        return self._terraform_binary_path
+
+    @terraform_binary_path.setter
+    def terraform_binary_path(self, value):
+        self._terraform_binary_path = value
 
     @property
     def run_all(self):
@@ -176,7 +190,7 @@ class Terragrunt(object):
 
     @property
     def terraform_plan(self):
-        self.logger.info(self._terraform_plan)
+        self.logger.debug(self._terraform_plan)
         return self._terraform_plan
 
     def apply(self):

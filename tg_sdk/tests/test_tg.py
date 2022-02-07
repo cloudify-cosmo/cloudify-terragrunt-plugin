@@ -151,13 +151,14 @@ def test__execute():
     )
 
 
-def test_execute():
+@patch('tg_sdk.tg.utils.get_version_string', return_value='1.0.1')
+def test_execute(*_):
     mocked_executor = MagicMock()
     tg = Terragrunt(properties=properties,
                     source=source,
                     executor=mocked_executor)
     tg.execute('foo', False)
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'foo',
          '--terragrunt-non-interactive',
@@ -170,13 +171,15 @@ def test_execute():
     )
 
 
-def test_commands():
+@patch('tg_sdk.tg.utils.get_version_string')
+def test_commands(version_string):
+    version_string.return_value = '1.0.1'
     mocked_executor = MagicMock()
     tg = Terragrunt(properties=properties,
                     source=source,
                     executor=mocked_executor)
     tg.render_json()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'render-json',
          '--terragrunt-non-interactive',
@@ -193,7 +196,7 @@ def test_commands():
                     source=source,
                     executor=mocked_executor)
     tg.graph_dependencies()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'graph-dependencies',
          '--terragrunt-non-interactive',
@@ -209,8 +212,9 @@ def test_commands():
     tg = Terragrunt(properties=properties,
                     source=source,
                     executor=mocked_executor)
+
     tg.validate_inputs()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'validate-inputs',
          '--terragrunt-non-interactive',
@@ -227,7 +231,7 @@ def test_commands():
                     source=source,
                     executor=mocked_executor)
     tg.terragrunt_info()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'terragrunt-info',
          '--terragrunt-non-interactive',
@@ -244,7 +248,7 @@ def test_commands():
                     source=source,
                     executor=mocked_executor)
     tg.apply()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'apply',
          '--terragrunt-non-interactive',
@@ -262,7 +266,7 @@ def test_commands():
                     source=source,
                     executor=mocked_executor)
     tg.destroy()
-    mocked_executor.assert_called_once_with(
+    mocked_executor.assert_called_with(
         ['/usr/local/bin/terragrunt',
          'destroy',
          '--terragrunt-non-interactive',
@@ -276,7 +280,8 @@ def test_commands():
     )
 
 
-def test_plan():
+@patch('tg_sdk.tg.utils.get_version_string', return_value='1.0.1')
+def test_plan(*_):
     mock_returned = '{"foo": "bar"}' \
                  '{"type": "outputs", ' \
                  '"outputs": {"output_foo": "output_bar"}}' \
@@ -299,7 +304,8 @@ def test_plan():
     assert plan == expected
 
 
-def test_terraform_plan():
+@patch('tg_sdk.tg.utils.get_version_string', return_value='1.0.1')
+def test_terraform_plan(*_):
     mock_returned = '{"foo": "bar"}' \
                     '{"type": "outputs", ' \
                     '"outputs": {"output_foo": "output_bar"}}' \
@@ -323,7 +329,8 @@ def test_terraform_plan():
     assert plan == expected
 
 
-def test_output():
+@patch('tg_sdk.tg.utils.get_version_string', return_value='1.0.1')
+def test_output(*_):
     expected = {'foo': ["bar"]}
     test_json = json.dumps(expected)
 
@@ -337,7 +344,8 @@ def test_output():
     assert result == expected
 
 
-def test_terraform_output():
+@patch('tg_sdk.tg.utils.get_version_string', return_value='1.0.1')
+def test_terraform_output(*_):
     expected = {'foo': ["bar"]}
     test_json = json.dumps(expected)
 

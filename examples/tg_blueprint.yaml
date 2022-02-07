@@ -18,11 +18,14 @@ inputs:
 
 node_templates:
 
-  terragrunt:
-    type: cloudify.nodes.terragrunt
-
   terraform:
     type: cloudify.nodes.terraform
+    properties:
+      resource_config:
+        installation_source: https://releases.hashicorp.com/terraform/1.1.4/terraform_1.1.4_linux_amd64.zip
+
+  terragrunt:
+    type: cloudify.nodes.terragrunt
 
   Stack:
     type: cloudify.nodes.terragrunt.Stack
@@ -37,4 +40,4 @@ node_templates:
       - target: terragrunt
         type: cloudify.relationships.terragrunt.depends_on
       - target: terraform
-        type: cloudify.relationships.terraform.depends_on
+        type: cloudify.relationships.depends_on

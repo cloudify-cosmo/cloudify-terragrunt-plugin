@@ -57,11 +57,11 @@ data_types:
       binary_path:
         type: string
         description: The path to the Terragrunt binary on your system. This may also be provided through a relationship to a cloudify.nodes.Terragrunt node template.
-        default: '/usr/local/bin/terragrunt'
+        required: false
       terraform_binary_path:
         type: string
         description: The path to the Terraform binary on your system. This may also be provided through a relationship to a cloudify.nodes.terraform node template.
-        default: '/usr/local/bin/terraform'
+        required: false
       source:
         type: cloudify.types.terragrunt.SourceSpecification
         description: Specification of Terragrunt Stack archive's source.

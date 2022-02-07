@@ -2,6 +2,8 @@ import os
 import json
 
 from . import utils
+from cloudify.exceptions import NonRecoverableError
+from cloudify_common_sdk.utils import v1_gteq_v2
 
 
 class Terragrunt(object):
@@ -100,10 +102,21 @@ class Terragrunt(object):
     @property
     def terraform_binary_path(self):
         if not self._terraform_binary_path:
-            self._terraform_binary_path = self.resource_config.get(
-                'terraform_binary_path')
+            self._terraform_binary_path = \
+                self.resource_config.get('terraform_binary_path')
 
+        version_output = \
+            self._execute([self._terraform_binary_path, '--version'])
+
+        version = utils.get_version_string(version_output)
+        if v1_gteq_v2('1.0.0', version):
+            raise NonRecoverableError(
+             'Cloudify Terragrunt plugin requires that the Terraform binary in'
+             ' use be above version 1.0.0.')
+        self.logger.info('terraform_path: {p}, version: {v}'
+                         .format(p=self._terraform_binary_path, v=version))
         return self._terraform_binary_path
+
 
     @terraform_binary_path.setter
     def terraform_binary_path(self, value):

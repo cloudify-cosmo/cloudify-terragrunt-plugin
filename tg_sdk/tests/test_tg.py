@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import tempfile
+from mock import patch
 from unittest.mock import MagicMock
 
 from .. import utils
@@ -79,7 +80,13 @@ def test_binary_path():
 
 
 def test_terraform_binary_path():
-    tg = Terragrunt(properties=properties, source=source)
+    mocked_executor = MagicMock()
+    mocked_executor.return_value = '1.0.4'
+
+    tg = Terragrunt(properties=properties,
+                    source=source,
+                    executor=mocked_executor)
+
     assert tg.terraform_binary_path == \
            tg.resource_config.get('terraform_binary_path')
 

@@ -23,6 +23,7 @@ class Terragrunt(object):
         self._source = None
         self._source_path = None
         self._binary_path = None
+        self._terraform_binary_path = kwargs.get('terraform_binary_path')
         self._command_options = {}
         self.executor = executor or utils.basic_executor
         self.cwd = kwargs.get('cwd')
@@ -95,16 +96,21 @@ class Terragrunt(object):
 
     @property
     def terraform_binary_path(self):
-        terraform_path = self.resource_config.get('terraform_binary_path')
-        version_output = self._execute([terraform_path, '--version'])
+        if not self._terraform_binary_path:
+            self._terraform_binary_path = \
+                self.resource_config.get('terraform_binary_path')
+
+        version_output = \
+            self._execute([self._terraform_binary_path, '--version'])
+
         version = utils.get_version_string(version_output)
         if v1_gteq_v2('1.0.0', version):
             raise NonRecoverableError(
              'Cloudify Terragrunt plugin requires that the Terraform binary in'
              ' use be above version 1.0.0.')
         self.logger.info('terraform_path: {p}, version: {v}'
-                         .format(p=terraform_path, v=version))
-        return terraform_path
+                         .format(p=self._terraform_binary_path, v=version))
+        return self._terraform_binary_path
 
     @property
     def run_all(self):

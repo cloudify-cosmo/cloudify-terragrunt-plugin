@@ -251,6 +251,5 @@ def get_resource_config():
 def check_prerequistes():
     try:
         run_subprocess(['git', '--version'])
-        return True
     except ProcessException:
-        return False
+        raise NonRecoverableError('Git is not installed')

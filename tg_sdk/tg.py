@@ -117,7 +117,6 @@ class Terragrunt(object):
                          .format(p=self._terraform_binary_path, v=version))
         return self._terraform_binary_path
 
-
     @terraform_binary_path.setter
     def terraform_binary_path(self, value):
         self._terraform_binary_path = value

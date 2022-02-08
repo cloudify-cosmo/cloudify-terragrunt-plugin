@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 from .. import tasks
 from . import mock_context, mock_terragrunt_from_ctx
 
 
-def test_precreate():
+@patch('cloudify_tg.utils.check_prerequistes', return_value=True)
+def test_precreate(*_):
     ctx = mock_context('test_precreate',
                        'test_precreate',
                        {},

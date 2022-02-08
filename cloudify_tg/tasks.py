@@ -12,6 +12,7 @@ from .constants import SUPPORTED_TG_COMMANDS_OPTIONS, SUPPORTED_TG_COMMANDS
 @operation
 @decorators.with_terragrunt
 def precreate(tg, **_):
+    utils.check_prerequistes()
     tg.terragrunt_info()
     tg.graph_dependencies()
     tg.validate_inputs()

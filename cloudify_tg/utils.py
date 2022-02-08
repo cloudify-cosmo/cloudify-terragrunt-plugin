@@ -1,6 +1,7 @@
 import os
 from shutil import rmtree
 
+from script_runner.tasks import ProcessException
 from cloudify import ctx as ctx_from_imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
@@ -245,3 +246,10 @@ def get_terragrunt_config():
 
 def get_resource_config():
     return get_property('resource_config')
+
+
+def check_prerequistes():
+    try:
+        run_subprocess(['git', '--version'])
+    except ProcessException:
+        raise NonRecoverableError('Git is not installed')

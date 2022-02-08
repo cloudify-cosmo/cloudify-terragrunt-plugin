@@ -245,3 +245,13 @@ def get_terragrunt_config():
 
 def get_resource_config():
     return get_property('resource_config')
+
+
+def check_prerequistes():
+    return_value = run_subprocess(['git', '--version'])
+    if return_value == 'git: command not found' or return_value == \
+            'is not recognized as an internal or external command, ' \
+            'operable program, or batch file':
+        raise NonRecoverableError('Git is not installed')
+    else:
+        ctx_from_imports.logger.info('{}'.format(return_value))

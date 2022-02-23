@@ -58,19 +58,19 @@ workflows:
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|fix-integration-test)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|fix-integration-test)/
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|fix-integration-test)/
       - wagonorb/build_bundle:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|fix-integration-test)/
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
@@ -80,7 +80,7 @@ workflows:
             - wagonorb/build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|fix-integration-test)/
       - releaseorb/release:
           filters:
             branches:

@@ -1,6 +1,6 @@
 import os
-import json
 import re
+import json
 
 from . import utils
 from cloudify.exceptions import NonRecoverableError
@@ -187,7 +187,6 @@ class Terragrunt(object):
         }
         result = self.execute('plan', return_output=False)
         new_result = re.sub('}\s*{', '}____TG_PLUGIN_PLAN____{', result)
-
         for item in new_result.split('____TG_PLUGIN_PLAN____'):
             rendered = json.loads(item)
             if 'type' not in rendered:

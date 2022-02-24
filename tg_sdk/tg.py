@@ -1,4 +1,5 @@
 import os
+import re
 import json
 
 from . import utils
@@ -185,7 +186,7 @@ class Terragrunt(object):
             'change_summary': {}
         }
         result = self.execute('plan', return_output=False)
-        new_result = result.replace('}{', '}____TG_PLUGIN_PLAN____{')
+        new_result = re.sub('}\s*{', '}____TG_PLUGIN_PLAN____{', result)
         for item in new_result.split('____TG_PLUGIN_PLAN____'):
             rendered = json.loads(item)
             if 'type' not in rendered:

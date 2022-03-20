@@ -46,7 +46,7 @@ setup(
     install_requires=[
         "Pathlib",
         "cloudify-common>=4.5.5",
-        "cloudify-utilities-plugins-sdk>=0.0.49",
+        "cloudify-utilities-plugins-sdk>=0.0.61",
     ],
     test_requires=[]
 )

@@ -60,6 +60,10 @@ class Terragrunt(object):
             self._source = self.resource_config.get('source')
         return self._source
 
+    @source.setter
+    def source(self, value):
+        self._source = value
+
     @property
     def source_path(self):
         """The local path on the manager to the expanded Terragrunt Stack

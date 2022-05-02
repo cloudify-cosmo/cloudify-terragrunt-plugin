@@ -1,8 +1,10 @@
 import os
+from sys import exc_info
 from shutil import rmtree
 
-from script_runner.tasks import ProcessException
+from cloudify import utils as cfy_utils
 from cloudify import ctx as ctx_from_imports
+from script_runner.tasks import ProcessException
 from cloudify.exceptions import NonRecoverableError
 from cloudify_common_sdk.utils import (
     get_ctx_node,
@@ -150,16 +152,19 @@ def terragrunt_from_ctx(kwargs):
         cwd=get_node_instance_dir(),
         **ctx_instance.runtime_properties['resource_config']
     )
-    update_source = kwargs.get('update_source', False)
-    if update_source:
-        ctx_from_imports.logger.info(
-            'Cleaning up previous Terragrunt workspace...')
-        cleanup_old_terragrunt_source()
-    if update_source or not tg.source_path or \
-            node_instance_dir not in tg.source_path:
+    if kwargs.get('destroy', False):
+        call_tg(tg, 'destroy')
+    source_kwargs = kwargs.get('source')
+    source_path_kwargs = kwargs.get('source_path')
+    if source_kwargs or \
+            not tg.source_path or node_instance_dir not in tg.source_path:
         ctx_from_imports.logger.info(
             'Downloading new Terragrunt stack to workspace...')
+        if source_kwargs:
+            tg.source = source_kwargs
         download_terragrunt_source(tg.source, node_instance_dir)
+        if source_path_kwargs:
+            tg.source_path = source_path_kwargs
         abs_source_path = ''
         if tg.source_path:
             abs_source_path = os.path.join(node_instance_dir, tg.source_path)
@@ -167,9 +172,22 @@ def terragrunt_from_ctx(kwargs):
             tg.source_path = node_instance_dir
         else:
             tg.source_path = abs_source_path
+        ctx_instance.runtime_properties['resource_config']['source'] = \
+            tg.source
         ctx_instance.runtime_properties['resource_config']['source_path'] = \
             tg.source_path
     return tg
+
+
+def call_tg(tg, callable_name):
+    try:
+        callable = getattr(tg, callable_name)
+        callable()
+    except Exception as ex:
+        _, _, tb = exc_info()
+        raise NonRecoverableError(
+            "Failed applying",
+            causes=[cfy_utils.exception_to_error_cause(ex, tb)])
 
 
 def download_terragrunt_source(source, target):

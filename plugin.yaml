@@ -3,7 +3,7 @@ plugins:
   tg:
     executor: central_deployment_agent
     package_name: cloudify-terragrunt-plugin
-    package_version: '0.0.1'
+    package_version: '0.0.2'
 
 dsl_definitions:
 
@@ -148,6 +148,14 @@ node_types:
               default: {}
               description: >
                 A list of options to extend the command list.
+            source:
+              type: string
+              description: URL for terragrunt stack archive.
+              default: { get_property: [ SELF, resource_config, source ] }
+            source_path:
+              type: string
+              description: The path inside of source archive.
+              default: { get_property: [ SELF, resource_config, source_path ] }
         run_command:
           implementation: tg.cloudify_tg.tasks.run_command
           inputs:
@@ -161,6 +169,7 @@ node_types:
         terragrunt_destroy:
           implementation: tg.cloudify_tg.tasks.terragrunt_destroy
           inputs:
+            <<: *command_options
         terragrunt_output:
           implementation: tg.cloudify_tg.tasks.terragrunt_output
           inputs:
@@ -169,6 +178,10 @@ node_types:
           implementation: tg.cloudify_tg.tasks.terragrunt_apply
           inputs:
             <<: *command_options
+            destroy:
+              type: boolean
+              default: false
+              description: destroy existing installation in order to avoid dependency errors.
         terragrunt_info:
           implementation: tg.cloudify_tg.tasks.terragrunt_info
           inputs:
@@ -186,8 +199,42 @@ node_types:
           inputs:
             <<: *command_options
 
-#workflows:
-#
+
+workflows:
+
+  terragrunt_plan:
+    mapping: tg.cloudify_tg.workflows.terragrunt_plan
+    parameters: &terragrunt_workflow_params
+      node_instance_ids:
+        type: list
+        default: []
+        description: |
+          List of node instance ID's to refresh for.
+      node_ids:
+        type: list
+        default: []
+        description: |
+          List of node templates to refresh for.
+      source:
+        type: string
+        default: ''
+        description: |
+          URL for terragrunt stack archive.
+      source_path:
+        type: string
+        default: ''
+        description: |
+          The path inside of source archive.
+
+  terragrunt_apply:
+    mapping: tg.cloudify_tg.workflows.terragrunt_apply
+    parameters:
+      <<: *terragrunt_workflow_params
+      destroy:
+        type: boolean
+        description: Destroy existing installation in order to avoid dependency errors.
+        default: false
+
 #  Terragrunt_refresh:
 #    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
 #    parameters: &terragrunt_workflow_params

@@ -45,7 +45,7 @@ def terragrunt_apply(ctx,
     sequence = graph.sequence()
 
     if isinstance(destroy, str):
-        if destroy == ['true', 'True']:
+        if destroy in ['true', 'True']:
             destroy = True
         else:
             destroy = False

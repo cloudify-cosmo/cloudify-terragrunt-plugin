@@ -1,0 +1,271 @@
+plugins:
+
+  tg:
+    executor: central_deployment_agent
+    package_name: cloudify-terragrunt-plugin
+    package_version: '0.0.2'
+
+dsl_definitions:
+
+  terragrunt_config: &terragrunt_config
+    terragrunt_config:
+      type: cloudify.types.terragrunt.DirectoryConfig
+      description: Terragrunt directories for executions.
+      required: false
+
+blueprint_labels:
+  obj-type:
+    values:
+      - terragrunt
+
+labels:
+  obj-type:
+    values:
+      - terragrunt
+
+data_types:
+
+  cloudify.types.terragrunt.DirectoryConfig:
+    properties:
+      executable_path:
+        type: string
+        description: The path to the terragrunt binary executable.
+        required: false
+
+  cloudify.types.terragrunt.InstallConfig:
+    properties:
+      use_existing_resource:
+        type: boolean
+        description: If true, use an existing Terragrunt installation rather than installing it
+        default: false
+      installation_source:
+        type: string
+        default: 'https://github.com/gruntwork-io/terragrunt/releases/download/v0.35.16/terragrunt_linux_amd64'
+        description: Location to download the Terraform executable binary from. Ignored if 'use_existing' is true.
+
+  cloudify.types.terragrunt.SourceSpecification:
+    properties:
+      location:
+        type: string
+        description: >
+          Path or URL to the ZIP file containing the Terraform project.
+          If this is a path, then it must be relative to the blueprint's root.
+        required: true
+      username:
+        type: string
+        description: >
+          Username to authenticate with
+        required: false
+      password:
+        type: string
+        description: >
+          Password to authenticate with
+        required: false
+
+  cloudify.types.terragrunt.Stack:
+    properties:
+      binary_path:
+        type: string
+        description: The path to the Terragrunt binary on your system. This may also be provided through a relationship to a cloudify.nodes.Terragrunt node template.
+        required: false
+      terraform_binary_path:
+        type: string
+        description: The path to the Terraform binary on your system. This may also be provided through a relationship to a cloudify.nodes.terraform node template.
+        required: false
+      source:
+        type: cloudify.types.terragrunt.SourceSpecification
+        description: Specification of Terragrunt Stack archive's source.
+        required: true
+      source_path:
+        type: string
+        description: The path within the source property, where the terragrunt files may be found.
+        default: ''
+      variables:
+        type: dict
+        description: A dictionary of variables.
+        default: {}
+      environment_variables:
+        type: dict
+        description: A dictionary of environment variables.
+        default: {}
+      run_all:
+        type: boolean
+        description: run all executes commands such as plan, apply, destroy, output in all modules in a stack.
+        default: false
+      command_options:
+        type: dict
+        description: |
+          Custom options that you wish to add to terragrunt commands when they are executed.
+          For example, if you want different log level for apply and destroy, the you can provide this dict:
+          apply: '["--terragrunt-log-level", "info"]'
+          destroy: '["--terragrunt-log-level", "debug"]'
+        default:
+          all: ["--terragrunt-non-interactive", "--terragrunt-log-level", "debug"]
+          apply: ["-auto-approve"]
+          destroy: ["-auto-approve"]
+          plan: ["-json"]
+          output: ["-json"]
+      masked_env_vars:
+        type: list
+        default: ['AWS_SECRET_ACCESS_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_DEFAULT_REGION']
+
+relationships:
+  cloudify.relationships.terragrunt.depends_on:
+    derived_from: cloudify.relationships.depends_on
+
+  cloudify.relationships.terraform.depends_on:
+     derived_from: cloudify.relationships.depends_on
+
+node_types:
+
+  # Represents a Terragrunt installation.
+  cloudify.nodes.terragrunt:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      <<: *terragrunt_config
+      resource_config:
+        type: cloudify.types.terragrunt.InstallConfig
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: tg.cloudify_tg.tasks.install
+        delete:
+          implementation: tg.cloudify_tg.tasks.uninstall
+
+  # Represents a Terragrunt Stack.
+  cloudify.nodes.terragrunt.Stack:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      resource_config:
+        type: cloudify.types.terragrunt.Stack
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: tg.cloudify_tg.tasks.precreate
+        create:
+          implementation: tg.cloudify_tg.tasks.create
+        poststart:
+          implementation: tg.cloudify_tg.tasks.poststart
+        delete:
+          implementation: tg.cloudify_tg.tasks.delete
+      terragrunt:
+        terragrunt_plan:
+          implementation: tg.cloudify_tg.tasks.terragrunt_plan
+          inputs: &command_options
+            options:
+              default: {}
+              description: >
+                A list of options to extend the command list.
+            source:
+              type: string
+              description: URL for terragrunt stack archive.
+              default: { get_property: [ SELF, resource_config, source ] }
+            source_path:
+              type: string
+              description: The path inside of source archive.
+              default: { get_property: [ SELF, resource_config, source_path ] }
+        run_command:
+          implementation: tg.cloudify_tg.tasks.run_command
+          inputs:
+            command:
+              default: ""
+              description: The command name, for example, if you wish to run "terragrunt apply", then the command input is "apply".
+            <<: *command_options
+            force:
+              default: false
+              description: We will run any command you send.
+        terragrunt_destroy:
+          implementation: tg.cloudify_tg.tasks.terragrunt_destroy
+          inputs:
+            <<: *command_options
+        terragrunt_output:
+          implementation: tg.cloudify_tg.tasks.terragrunt_output
+          inputs:
+            <<: *command_options
+        terragrunt_apply:
+          implementation: tg.cloudify_tg.tasks.terragrunt_apply
+          inputs:
+            <<: *command_options
+            destroy:
+              type: boolean
+              default: false
+              description: destroy existing installation in order to avoid dependency errors.
+        terragrunt_info:
+          implementation: tg.cloudify_tg.tasks.terragrunt_info
+          inputs:
+            <<: *command_options
+        validate_inputs:
+          implementation: tg.cloudify_tg.tasks.validate_inputs
+          inputs:
+            <<: *command_options
+        graph_dependencies:
+          implementation: tg.cloudify_tg.tasks.graph_dependencies
+          inputs:
+            <<: *command_options
+        render_json:
+          implementation: tg.cloudify_tg.tasks.render_json
+          inputs:
+            <<: *command_options
+
+
+workflows:
+
+  terragrunt_plan:
+    mapping: tg.cloudify_tg.workflows.terragrunt_plan
+    parameters: &terragrunt_workflow_params
+      node_instance_ids:
+        type: list
+        default: []
+        description: |
+          List of node instance ID's to refresh for.
+      node_ids:
+        type: list
+        default: []
+        description: |
+          List of node templates to refresh for.
+      source:
+        type: string
+        default: ''
+        description: |
+          URL for terragrunt stack archive.
+      source_path:
+        type: string
+        default: ''
+        description: |
+          The path inside of source archive.
+
+  terragrunt_apply:
+    mapping: tg.cloudify_tg.workflows.terragrunt_apply
+    parameters:
+      <<: *terragrunt_workflow_params
+      destroy:
+        type: boolean
+        description: Destroy existing installation in order to avoid dependency errors.
+        default: false
+
+#  Terragrunt_refresh:
+#    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
+#    parameters: &terragrunt_workflow_params
+#      node_instance_ids:
+#        type: list
+#        default: []
+#        description: |
+#          List of node instance ID's to refresh for.
+#      node_ids:
+#        type: list
+#        default: []
+#        description: |
+#          List of node templates to refresh for.
+#
+#  terragrunt_show:
+#    mapping: tg.cloudify_tg.workflows.terragrunt_show
+#    parameters:
+#      <<: *terragrunt_workflow_params
+#      source:
+#        type: string
+#        default: ''
+#      source_path:
+#        type: string
+#        default: ''

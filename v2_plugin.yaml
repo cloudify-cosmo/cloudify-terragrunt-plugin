@@ -211,8 +211,8 @@ workflows:
         description: |
           List of node instance ID's to refresh for.
       node_ids:
-        type: list
-        default: node_instance_ids
+        type: node_ids
+        default: []
         description: |
           List of node templates to refresh for.
       source:

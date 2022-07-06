@@ -58,19 +58,19 @@ workflows:
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|RD-5146-update-manager-orb-to-use-6-4-dev-build)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|RD-5146-update-manager-orb-to-use-6-4-dev-build)/
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|RD-5146-update-manager-orb-to-use-6-4-dev-build)/
       - wagonorb/build_bundle:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|RD-5146-update-manager-orb-to-use-6-4-dev-build)/
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
@@ -78,7 +78,7 @@ workflows:
       - integration_tests_py3:
           filters:
             branches:
-              only: /([0-9\.]*\-build|main|dev)/
+              only: /([0-9\.]*\-build|main|dev|RD-5146-update-manager-orb-to-use-6-4-dev-build)/
           requires:
             - wagonorb/build_bundle
       - releaseorb/release:

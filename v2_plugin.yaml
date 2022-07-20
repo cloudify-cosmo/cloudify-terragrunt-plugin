@@ -3,7 +3,7 @@ plugins:
   tg:
     executor: central_deployment_agent
     package_name: cloudify-terragrunt-plugin
-    package_version: '0.0.2'
+    package_version: '0.0.3'
 
 dsl_definitions:
 
@@ -12,16 +12,6 @@ dsl_definitions:
       type: cloudify.types.terragrunt.DirectoryConfig
       description: Terragrunt directories for executions.
       required: false
-
-blueprint_labels:
-  obj-type:
-    values:
-      - terragrunt
-
-labels:
-  obj-type:
-    values:
-      - terragrunt
 
 data_types:
 
@@ -245,27 +235,12 @@ workflows:
         description: Destroy existing installation in order to avoid dependency errors.
         default: false
 
-#  Terragrunt_refresh:
-#    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
-#    parameters: &terragrunt_workflow_params
-#      node_instance_ids:
-#        type: list
-#        default: []
-#        description: |
-#          List of node instance ID's to refresh for.
-#      node_ids:
-#        type: list
-#        default: []
-#        description: |
-#          List of node templates to refresh for.
-#
-#  terragrunt_show:
-#    mapping: tg.cloudify_tg.workflows.terragrunt_show
-#    parameters:
-#      <<: *terragrunt_workflow_params
-#      source:
-#        type: string
-#        default: ''
-#      source_path:
-#        type: string
-#        default: ''
+blueprint_labels:
+  obj-type:
+    values:
+      - terragrunt
+
+labels:
+  obj-type:
+    values:
+      - terragrunt

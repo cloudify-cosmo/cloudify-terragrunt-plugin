@@ -208,11 +208,13 @@ workflows:
       node_instance_ids:
         type: list
         default: []
+        item_type: node_instance
         description: |
           List of node instance ID's to refresh for.
       node_ids:
         type: list
         default: []
+        item_type: node_id
         description: |
           List of node templates to refresh for.
       source:
@@ -235,27 +237,12 @@ workflows:
         description: Destroy existing installation in order to avoid dependency errors.
         default: false
 
-#  Terragrunt_refresh:
-#    mapping: tg.cloudify_tg.workflows.Terragrunt_refresh
-#    parameters: &terragrunt_workflow_params
-#      node_instance_ids:
-#        type: list
-#        default: []
-#        description: |
-#          List of node instance ID's to refresh for.
-#      node_ids:
-#        type: list
-#        default: []
-#        description: |
-#          List of node templates to refresh for.
-#
-#  terragrunt_show:
-#    mapping: tg.cloudify_tg.workflows.terragrunt_show
-#    parameters:
-#      <<: *terragrunt_workflow_params
-#      source:
-#        type: string
-#        default: ''
-#      source_path:
-#        type: string
-#        default: ''
+blueprint_labels:
+  obj-type:
+    values:
+      - terragrunt
+
+labels:
+  obj-type:
+    values:
+      - terragrunt

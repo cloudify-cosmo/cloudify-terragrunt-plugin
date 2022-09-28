@@ -204,7 +204,7 @@ class Terragrunt(object):
                     plan['change_summary'] = rendered['changes']
             except json.decoder.JSONDecodeError:
                 # ignoring non json output like releasing state lock
-                pass
+                self.logger.info('JSONDecodeError in line: {}'.format(item))
 
         self._terraform_plan = plan
         return self.terraform_plan

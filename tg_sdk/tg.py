@@ -192,15 +192,19 @@ class Terragrunt(object):
         result = self.execute('plan', return_output=False)
         new_result = re.sub('}\s*{', '}____TG_PLUGIN_PLAN____{', result)
         for item in new_result.split('____TG_PLUGIN_PLAN____'):
-            rendered = json.loads(item)
-            if 'type' not in rendered:
-                continue
-            elif rendered['type'] == 'outputs':
-                plan['outputs'] = rendered['outputs']
-            elif rendered['type'] == 'resource_drift':
-                plan['resource_drifts'].append(rendered['change'])
-            elif rendered['type'] == 'change_summary':
-                plan['change_summary'] = rendered['changes']
+            try:
+                rendered = json.loads(item)
+                if 'type' not in rendered:
+                    continue
+                elif rendered['type'] == 'outputs':
+                    plan['outputs'] = rendered['outputs']
+                elif rendered['type'] == 'resource_drift':
+                    plan['resource_drifts'].append(rendered['change'])
+                elif rendered['type'] == 'change_summary':
+                    plan['change_summary'] = rendered['changes']
+            except json.decoder.JSONDecodeError:
+                # ignoring non json output like releasing state lock
+                self.logger.info('JSONDecodeError in line: {}'.format(item))
 
         self._terraform_plan = plan
         return self.terraform_plan

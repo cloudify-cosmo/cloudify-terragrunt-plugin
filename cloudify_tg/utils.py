@@ -32,7 +32,7 @@ def download_source(source, target_directory, logger):
         source=source, dest=target_directory))
     if isinstance(source, dict):
         source_tmp_path = get_shared_resource(
-            source, dir=target_directory,
+            source.get('location'), dir=target_directory,
             username=source.get('username'),
             password=source.get('password'))
     else:

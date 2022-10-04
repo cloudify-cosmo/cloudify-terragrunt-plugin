@@ -103,7 +103,8 @@ def validate_resource_config():
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
     else:
-        if resource_config['source_path'].startswith('/') and \
+        if resource_config['source_path'] and \
+                resource_config['source_path'].startswith('/') and \
                 ctx_instance.id not in resource_config['source_path']:
             i += 1
             message = \
@@ -118,14 +119,21 @@ def validate_resource_config():
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
     else:
-        if isinstance(resource_config['source'], dict) and not \
-                resource_config['source'].get('location', '').endswith('.zip')\
-                or isinstance(resource_config['source'], str) and not \
-                resource_config['source'].endswith('.zip'):
+        def is_valid_source(source):
+            if isinstance(source, dict):
+                location = source.get('location', '')
+            elif isinstance(source, str):
+                location = source
+            else:
+                return False
+            if location.endswith('.zip') or location.endswith('.git'):
+                return True
+
+        if not is_valid_source(resource_config['source']):
             i += 1
             message = \
                 'Error {i} - The source location provided, {s}, is invalid. ' \
-                'Only zip archives are currently supported.'.format(
+                'Only zip archives or git repositories are currently supported.'.format(
                     i=i, s=resource_config['source'])
             errors.append(message)
     if i > 0:

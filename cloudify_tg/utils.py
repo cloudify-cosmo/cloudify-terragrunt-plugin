@@ -126,15 +126,17 @@ def validate_resource_config():
                 location = source
             else:
                 return False
-            if location.endswith('.zip') or location.endswith('.git'):
+            if location.endswith('.zip') or 'git@' in location:
                 return True
+            else:
+                return False
 
         if not is_valid_source(resource_config['source']):
             i += 1
             message = \
                 'Error {i} - The source location provided, {s}, is invalid. ' \
-                'Only zip archives or git repositories are currently supported.'.format(
-                    i=i, s=resource_config['source'])
+                'Only zip archives or git repositories are currently ' \
+                'supported.'.format(i=i, s=resource_config['source'])
             errors.append(message)
     if i > 0:
         raise NonRecoverableError(

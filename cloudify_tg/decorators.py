@@ -1,7 +1,7 @@
 from sys import exc_info
 from functools import wraps
 
-from .utils import is_using_existing
+from .utils import is_using_existing, cleanup_tfvars
 from cloudify import utils as cfy_utils
 from cloudify.exceptions import NonRecoverableError
 
@@ -12,6 +12,7 @@ def with_terragrunt(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         kwargs['tg'] = utils.terragrunt_from_ctx(kwargs)
+        kwargs['tg'].render_inputs()
         try:
             func(*args, **kwargs)
         except Exception as ex:
@@ -27,7 +28,7 @@ def with_terragrunt(func):
         if kwargs['tg'].terraform_output:
             kwargs['ctx'].instance.runtime_properties['terraform_output'] = \
                 kwargs['tg'].terraform_output
-
+        cleanup_tfvars(kwargs)
     return wrapper
 
 

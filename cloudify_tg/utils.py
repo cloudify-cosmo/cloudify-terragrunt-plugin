@@ -27,6 +27,12 @@ except ImportError:
     RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 
+def cleanup_tfvars(kwargs):
+    tfvars_file = kwargs['tg'].tfvars_file
+    remove_directory(tfvars_file)
+    kwargs['tg'].tfvars_file = None
+
+
 def download_source(source, target_directory, logger):
     logger.debug('Downloading {source} to {dest}.'.format(
         source=source, dest=target_directory))

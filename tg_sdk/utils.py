@@ -2,8 +2,30 @@ import os
 import re
 import logging
 from contextlib import contextmanager
+from copy import deepcopy
 from tempfile import NamedTemporaryFile
 from subprocess import check_output, CalledProcessError
+
+from cloudify_common_sdk.utils import CommonSDKSecret
+
+
+COMMAND_WITH_INPUTS = [
+    'plan',
+    'apply',
+    'destroy',
+    'validate',
+    'validate-inputs'
+]
+
+
+def convert_secrets(data):
+    data = deepcopy(data)
+    for k, v in list(data.items()):
+        if isinstance(v, CommonSDKSecret):
+            data[k] = v.secret
+        else:
+            data[k] = v
+    return data
 
 
 def get_logger(logger_name=None):

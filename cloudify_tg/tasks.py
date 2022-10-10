@@ -115,7 +115,7 @@ def install(ctx, **_):
     installation_dir = sdk_utils.get_node_instance_dir()
     # The path to the terragrunt binary executable.
     terragrunt_config = utils.get_terragrunt_config()
-    resource_config = utils.get_resource_config()
+    resource_config = utils.get_resource_config(ctx)
 
     executable_path = terragrunt_config.get(
         'executable_path',
@@ -146,7 +146,7 @@ def install(ctx, **_):
 @decorators.skip_if_existing
 def uninstall(ctx, **_):
     terragrunt_config = utils.get_terragrunt_config()
-    resource_config = utils.get_resource_config()
+    resource_config = utils.get_resource_config(ctx)
     exc_path = terragrunt_config.get('executable_path', '')
     system_exc = resource_config.get('use_existing_resource')
 

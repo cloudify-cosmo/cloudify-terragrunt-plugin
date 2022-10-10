@@ -2,5 +2,8 @@
 0.0.2: Add Plan and Apply workflows.
 0.0.3: Support redhat 8 and dsl 1_4.
 0.0.4: Fix source.location bug for dictionary source type
-0.0.5: Allow *.git source location and add inputs.
+0.0.5:
+ - Allow *.git source location.
+ - Support variables.
+ - Hide secrets in resource_config
 

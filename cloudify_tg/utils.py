@@ -17,6 +17,8 @@ from cloudify_common_sdk.utils import (
     find_rels_by_node_type
 )
 from cloudify_common_sdk.resource_downloader import get_shared_resource
+from cloudify_common_sdk.secure_property_management import (
+    get_stored_property)
 
 from tg_sdk import Terragrunt
 
@@ -29,7 +31,8 @@ except ImportError:
 
 def cleanup_tfvars(kwargs):
     tfvars_file = kwargs['tg'].tfvars_file
-    remove_directory(tfvars_file)
+    if os.path.exists(tfvars_file):
+        os.remove(tfvars_file)
     kwargs['tg'].tfvars_file = None
 
 
@@ -253,7 +256,7 @@ def cleanup_old_terragrunt_source():
 
 def is_using_existing():
     """Decide if we need to do this work or not."""
-    resource_config = get_resource_config()
+    resource_config = get_resource_config(ctx_from_imports)
     return resource_config.get('use_existing_resource', True)
 
 
@@ -277,8 +280,8 @@ def get_terragrunt_config():
     return get_property('terragrunt_config')
 
 
-def get_resource_config():
-    return get_property('resource_config')
+def get_resource_config(ctx, target=False, force=None):
+    return get_stored_property(ctx, 'resource_config', target, force)
 
 
 def check_prerequistes():

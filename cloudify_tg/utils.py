@@ -54,11 +54,10 @@ def download_source(source, target_directory, logger):
     return source_tmp_path
 
 
-    def configure_ctx(ctx_instance, ctx_node, resource_config=None):
+def configure_ctx(ctx_instance, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
-        update_resource_config(resource_config
-                               or ctx_node.properties['resource_config'])
+        update_resource_config(resource_config or get_resource_config())
     update_terraform_binary(ctx_instance)
     update_terragrunt_binary(ctx_instance)
     validate_resource_config()
@@ -161,7 +160,7 @@ def terragrunt_from_ctx(kwargs):
     ctx_node = get_ctx_node(_ctx)
     ctx_instance = get_ctx_instance(_ctx)
     ctx = _ctx or ctx_from_imports
-    configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
+    configure_ctx(ctx_instance, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
 
     # configure_binaries()
@@ -258,7 +257,7 @@ def cleanup_old_terragrunt_source():
 
 def is_using_existing():
     """Decide if we need to do this work or not."""
-    resource_config = get_resource_config(ctx_from_imports)
+    resource_config = get_resource_config()
     return resource_config.get('use_existing_resource', True)
 
 

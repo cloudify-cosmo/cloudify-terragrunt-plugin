@@ -18,7 +18,9 @@ from cloudify_common_sdk.utils import (
 )
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.secure_property_management import (
-    get_stored_property)
+    get_stored_property,
+    store_property
+)
 
 from tg_sdk import Terragrunt
 
@@ -52,11 +54,11 @@ def download_source(source, target_directory, logger):
     return source_tmp_path
 
 
-def configure_ctx(ctx_instance, ctx_node, resource_config=None):
+    def configure_ctx(ctx_instance, ctx_node, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
-        ctx_instance.runtime_properties['resource_config'] = \
-            resource_config or ctx_node.properties['resource_config']
+        update_resource_config(resource_config
+                               or ctx_node.properties['resource_config'])
     update_terraform_binary(ctx_instance)
     update_terragrunt_binary(ctx_instance)
     validate_resource_config()
@@ -280,8 +282,15 @@ def get_terragrunt_config():
     return get_property('terragrunt_config')
 
 
-def get_resource_config(ctx, target=False, force=None):
-    return get_stored_property(ctx, 'resource_config', target, force)
+def get_resource_config(target=False, force=None):
+    return get_stored_property(ctx_from_imports,
+                               'resource_config',
+                               target,
+                               force)
+
+
+def update_resource_config(new_values, target=False):
+    store_property(ctx_from_imports, 'resource_config', new_values, target)
 
 
 def check_prerequistes():

@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import tempfile
 
 from . import utils
 from cloudify.exceptions import NonRecoverableError
@@ -24,6 +25,7 @@ class Terragrunt(object):
         self._source = kwargs.get('source')
         self._source_path = None
         self._binary_path = kwargs.get('binary_path')
+        self._variables = kwargs.get('variables', {})
         self._terraform_binary_path = kwargs.get('terraform_binary_path')
         self._command_options = {}
         self.executor = executor or utils.basic_executor
@@ -31,6 +33,7 @@ class Terragrunt(object):
         self._terraform_plan = None
         self._terraform_output = []
         self._run_all = None
+        self.tfvars_file = None
         self.masked_env_vars = masked_env_vars
 
     @property
@@ -148,6 +151,21 @@ class Terragrunt(object):
         return self.resource_config.get('environment_variables', {})
 
     @property
+    def insecure_variables(self):
+        return utils.convert_secrets(self._variables)
+
+    @property
+    def variables(self):
+        return self._variables
+
+    @variables.setter
+    def variables(self, value):
+        if self._variables:
+            self._variables.update(value)
+        else:
+            self._variables = value
+
+    @property
     def command_options(self):
         if self._command_options:
             return self._command_options
@@ -160,6 +178,15 @@ class Terragrunt(object):
     def version(self):
         return utils.get_version_string(
             self._execute([self.binary_path, '--version']))
+
+    def render_inputs(self):
+        with tempfile.NamedTemporaryFile(suffix=".json",
+                                         delete=False,
+                                         mode="w",
+                                         dir=self.source_path) as f:
+            json.dump(self.insecure_variables, f)
+            f.close()
+            self.tfvars_file = f.name
 
     def _execute(self, command, return_output=True):
         args = [command]
@@ -177,6 +204,8 @@ class Terragrunt(object):
         command = [self.binary_path, name]
         if self.run_all:
             command.insert(1, 'run-all')
+        if name in utils.COMMAND_WITH_INPUTS and self.tfvars_file:
+            command.extend(['-var-file={}'.format(self.tfvars_file)])
         command.extend(self.command_options.get('all', []))
         command.extend(self.command_options.get(name, []))
         if 'terragrunt-tfpath' not in command and self.terraform_binary_path:

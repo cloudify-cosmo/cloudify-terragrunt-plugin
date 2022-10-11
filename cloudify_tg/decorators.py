@@ -1,17 +1,17 @@
 from sys import exc_info
 from functools import wraps
 
-from .utils import is_using_existing
+from . import utils
+
 from cloudify import utils as cfy_utils
 from cloudify.exceptions import NonRecoverableError
-
-from . import utils
 
 
 def with_terragrunt(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         kwargs['tg'] = utils.terragrunt_from_ctx(kwargs)
+        kwargs['tg'].render_inputs()
         try:
             func(*args, **kwargs)
         except Exception as ex:
@@ -27,13 +27,13 @@ def with_terragrunt(func):
         if kwargs['tg'].terraform_output:
             kwargs['ctx'].instance.runtime_properties['terraform_output'] = \
                 kwargs['tg'].terraform_output
-
+        utils.cleanup_tfvars(kwargs)
     return wrapper
 
 
 def skip_if_existing(func):
     @wraps(func)
     def f(*args, **kwargs):
-        if not is_using_existing():
+        if not utils.is_using_existing():
             return func(*args, **kwargs)
     return f

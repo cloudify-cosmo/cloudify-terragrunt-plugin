@@ -1,6 +1,10 @@
-from mock import Mock, patch
+from mock import (
+    MagicMock,
+    Mock,
+    patch
+)
 from contextlib import contextmanager
-
+from io import BufferedIOBase
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext, MockNodeInstanceContext
 
@@ -50,4 +54,5 @@ def mock_terragrunt_from_ctx(*_, **__):
         mocked.terragrunt_from_ctx.return_value = Mock(
             terraform_plan='terraform_plan',
             terraform_output='terraform_output')
+        mocked.tfvars_file.return_value = MagicMock(spec=BufferedIOBase)
         yield mocked

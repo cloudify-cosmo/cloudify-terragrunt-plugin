@@ -17,6 +17,10 @@ from cloudify_common_sdk.utils import (
     find_rels_by_node_type
 )
 from cloudify_common_sdk.resource_downloader import get_shared_resource
+from cloudify_common_sdk.secure_property_management import (
+    get_stored_property,
+    store_property
+)
 
 from tg_sdk import Terragrunt
 
@@ -25,6 +29,13 @@ try:
 except ImportError:
     NODE_INSTANCE = 'node-instance'
     RELATIONSHIP_INSTANCE = 'relationship-instance'
+
+
+def cleanup_tfvars(kwargs):
+    tfvars_file = kwargs['tg'].tfvars_file
+    if os.path.exists(tfvars_file):
+        os.remove(tfvars_file)
+    kwargs['tg'].tfvars_file = None
 
 
 def download_source(source, target_directory, logger):
@@ -43,11 +54,10 @@ def download_source(source, target_directory, logger):
     return source_tmp_path
 
 
-def configure_ctx(ctx_instance, ctx_node, resource_config=None):
+def configure_ctx(ctx_instance, resource_config=None):
     ctx_from_imports.logger.info('Configuring runtime information...')
     if 'resource_config' not in ctx_instance.runtime_properties:
-        ctx_instance.runtime_properties['resource_config'] = \
-            resource_config or ctx_node.properties['resource_config']
+        update_resource_config(resource_config or get_resource_config())
     update_terraform_binary(ctx_instance)
     update_terragrunt_binary(ctx_instance)
     validate_resource_config()
@@ -103,7 +113,8 @@ def validate_resource_config():
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
     else:
-        if resource_config['source_path'].startswith('/') and \
+        if resource_config['source_path'] and \
+                resource_config['source_path'].startswith('/') and \
                 ctx_instance.id not in resource_config['source_path']:
             i += 1
             message = \
@@ -118,15 +129,24 @@ def validate_resource_config():
             .format(i=i, sp=resource_config['source_path'])
         errors.append(message)
     else:
-        if isinstance(resource_config['source'], dict) and not \
-                resource_config['source'].get('location', '').endswith('.zip')\
-                or isinstance(resource_config['source'], str) and not \
-                resource_config['source'].endswith('.zip'):
+        def is_valid_source(source):
+            if isinstance(source, dict):
+                location = source.get('location', '')
+            elif isinstance(source, str):
+                location = source
+            else:
+                return False
+            if location.endswith('.zip') or 'git@' in location:
+                return True
+            else:
+                return False
+
+        if not is_valid_source(resource_config['source']):
             i += 1
             message = \
                 'Error {i} - The source location provided, {s}, is invalid. ' \
-                'Only zip archives are currently supported.'.format(
-                    i=i, s=resource_config['source'])
+                'Only zip archives or git repositories are currently ' \
+                'supported.'.format(i=i, s=resource_config['source'])
             errors.append(message)
     if i > 0:
         raise NonRecoverableError(
@@ -140,7 +160,7 @@ def terragrunt_from_ctx(kwargs):
     ctx_node = get_ctx_node(_ctx)
     ctx_instance = get_ctx_instance(_ctx)
     ctx = _ctx or ctx_from_imports
-    configure_ctx(ctx_instance, ctx_node, kwargs.get('resource_config', {}))
+    configure_ctx(ctx_instance, kwargs.get('resource_config', {}))
     node_instance_dir = get_node_instance_dir()
 
     # configure_binaries()
@@ -199,8 +219,7 @@ def download_terragrunt_source(source, target):
     source_tmp_path = download_source(
         source, target, ctx_from_imports.logger)
     copy_directory(source_tmp_path, target)
-    path_to_rm = os.path.dirname(source_tmp_path)
-    remove_directory(path_to_rm)
+    remove_directory(source_tmp_path)
 
 
 def get_terragrunt_source_config(new_source_config=False):
@@ -262,8 +281,15 @@ def get_terragrunt_config():
     return get_property('terragrunt_config')
 
 
-def get_resource_config():
-    return get_property('resource_config')
+def get_resource_config(target=False, force=None):
+    return get_stored_property(ctx_from_imports,
+                               'resource_config',
+                               target,
+                               force)
+
+
+def update_resource_config(new_values, target=False):
+    store_property(ctx_from_imports, 'resource_config', new_values, target)
 
 
 def check_prerequistes():

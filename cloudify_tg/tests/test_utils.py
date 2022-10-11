@@ -11,6 +11,7 @@ from cloudify.exceptions import NonRecoverableError
 
 
 @patch('cloudify_tg.utils.validate_resource_config')
+@patch('cloudify_tg.utils.get_resource_config')
 def test_configure_ctx(*_):
     node_props = {
         'resource_config': {
@@ -25,7 +26,9 @@ def test_configure_ctx(*_):
                        node_props,
                        instance_props)
 
-    result = utils.configure_ctx(ctx.instance, ctx.node)
+    result = utils.configure_ctx(ctx.instance,
+                                 resource_config=node_props['resource_config'])
+    print(ctx.instance.runtime_properties)
     assert ctx.instance.runtime_properties == {
         'foo': 'bar',
         'resource_config': {

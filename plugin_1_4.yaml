@@ -3,7 +3,7 @@ plugins:
   tg:
     executor: central_deployment_agent
     package_name: cloudify-terragrunt-plugin
-    package_version: '0.0.5'
+    package_version: '0.0.6'
 
 dsl_definitions:
 

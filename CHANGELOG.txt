@@ -6,4 +6,4 @@
  - Allow *.git source location.
  - Support variables.
  - Hide secrets in resource_config
-
+0.0.6: Release 1 4 in place of v2.

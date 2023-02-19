@@ -35,7 +35,7 @@ commands:
 
   run_tf_vm_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800
+      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800 --required-ips 2
 
 jobs:
   integration_tests_py3:

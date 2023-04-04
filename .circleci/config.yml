@@ -14,6 +14,7 @@ orbs:
   wagonorb: cloudify/wagon-bulder-orb@volatile
   releaseorb: cloudify/release-orb@volatile
   managerorb: cloudify/manager-orb@volatile
+  slack: cloudify/notify-slack@2
 
 checkout:
   post:

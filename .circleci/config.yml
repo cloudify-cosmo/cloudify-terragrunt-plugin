@@ -1,5 +1,9 @@
 version: 2.1
 
+job-post-steps: &job-post-steps
+  post-steps:
+   - slack/notify_failed
+
 unittest-post-steps: &unittest-post-steps
   post-steps:
     - store_test_results:
@@ -45,10 +49,7 @@ commands:
 
   run_tf_vm_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800 --required-ips 2 | tee -a run_tf_vm_test.log
-      - store_artifacts:
-          path: run_tf_vm_test.log
-      - slack/notify_failed
+      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800 --required-ips 2
 
 jobs:
   integration_tests_py3:
@@ -85,9 +86,6 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|main|dev)/
       - integration_tests_py3:
-          context: 
-            - slack-secrets
-          <<: *unittest-post-steps
           filters:
             branches:
               only: /([0-9\.]*\-build|main|dev)/
@@ -142,7 +140,7 @@ workflows:
       - integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *unittest-post-steps
+          <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon

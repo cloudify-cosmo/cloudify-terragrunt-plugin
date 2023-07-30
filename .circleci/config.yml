@@ -95,7 +95,7 @@ workflows:
       - integration_tests_py3:
           context: 
             - plugins-inputs
-         <<: *unittest-post-steps
+          <<: *unittest-post-steps
           # filters:
           #   branches:
           #     only: /([0-9\.]*\-build|main|dev)/

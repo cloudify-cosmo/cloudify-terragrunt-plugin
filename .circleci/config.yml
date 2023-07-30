@@ -76,10 +76,10 @@ workflows:
       - wagonorb/wagon
       - wagonorb/wagon_311
       
-      - wagonorb/wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|main|dev)/
+      # - wagonorb/wagon:
+      #     filters:
+      #       branches:
+      #         only: /([0-9\.]*\-build|main|dev)/
       # - wagonorb/wagon_311:
       #     filters:
       #       branches:

@@ -30,7 +30,7 @@ data_types:
         default: false
       installation_source:
         type: string
-        default: 'https://github.com/gruntwork-io/terragrunt/releases/download/v0.35.16/terragrunt_linux_amd64'
+        default: 'https://github.com/gruntwork-io/terragrunt/releases/download/v0.48.6/terragrunt_linux_amd64'
         description: Location to download the Terraform executable binary from. Ignored if 'use_existing' is true.
 
   cloudify.types.terragrunt.SourceSpecification:

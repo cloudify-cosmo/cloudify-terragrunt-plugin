@@ -63,7 +63,7 @@ commands:
 
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=eu-central-1 -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
+      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=eu-west-1 -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
       - run: ecosystem-test remote-upload-plugin -PN terraform -WT manylinux
 
   run_tf_vm_test:

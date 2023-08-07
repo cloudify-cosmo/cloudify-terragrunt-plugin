@@ -68,7 +68,7 @@ commands:
 
   run_tf_vm_test:
     steps:
-      - run: ecosystem-test remote-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800 --required-ips 2 | tee -a run_tf_vm_test.log
+      - run: ecosystem-test remote-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=1800 --required-ips 2 | tee -a run_tf_vm_test.log
       - store_artifacts:
           path: run_tf_vm_test.log
       - slack/notify_failed

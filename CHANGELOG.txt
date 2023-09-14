@@ -8,3 +8,4 @@
  - Hide secrets in resource_config
 0.0.6: Release 1 4 in place of v2.
 0.0.7: add __version__.py file in cloudify_tg folder.
+0.0.8: Publish py311 wagon.

@@ -38,7 +38,7 @@ setup(
     license='LICENSE',
     install_requires=[
         "Pathlib",
-        "cloudify-common>=4.5.5",
+        "cloudify-common>=6.4",
         "cloudify-utilities-plugins-sdk>=0.0.61",
     ],
     test_requires=[]

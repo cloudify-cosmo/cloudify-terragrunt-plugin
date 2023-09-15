@@ -38,14 +38,37 @@ executors:
 
 commands:
 
+  setup_manager:
+    steps:
+      - run: |
+          if [[ -z "${CLOUDIFY_HOST}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TENANT}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TOKEN}" ]]; then
+              exit 1
+          fi
+      - run: |
+          response=$(curl --write-out '%{http_code}' --silent --insecure --header "Tenant: ${CLOUDIFY_TENANT}" --header "Authentication-Token: ${CLOUDIFY_TOKEN}" https://$CLOUDIFY_HOST/api/v3.1/status --output /dev/null)
+          if [[ $response != 200 ]]; then
+              echo "Failed to get manager status";
+              exit 1
+          fi
+      - run: pip3 install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
+      - run: git submodule update --init --recursive --remote
+
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=eu-central-1 --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml
-      - run: ecosystem-test upload-plugin -PN terraform
+      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -s aws_region_name=eu-west-1 -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
+      - run: ecosystem-test remote-upload-plugin -PN terraform -WT manylinux
 
   run_tf_vm_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg --on-failure=uninstall-force --timeout=1800 --required-ips 2 | tee -a run_tf_vm_test.log
+      - run: ecosystem-test remote-blueprint-test -b examples/tg_blueprint.yaml --test-id=tg-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=1800 --required-ips 2 | tee -a run_tf_vm_test.log
       - store_artifacts:
           path: run_tf_vm_test.log
       - slack/notify_failed
@@ -57,7 +80,9 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - managerorb/create_manager_container_latest
+      - attach_workspace:
+          at: workspace
+      - setup_manager
       - prepare_test_manager
       - run_tf_vm_test
 
@@ -68,14 +93,19 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - node/validate_documentation_job
       - node/validate_version_job
+     
       - wagonorb/wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|main|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
@@ -86,13 +116,14 @@ workflows:
               only: /([0-9\.]*\-build|main|dev)/
       - integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
           filters:
             branches:
               only: /([0-9\.]*\-build|main|dev)/
           requires:
             - wagonorb/wagon
+            - wagonorb/wagon_311
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
       - releaseorb/release:
@@ -102,6 +133,7 @@ workflows:
           requires:
             - node/unittests_job
             - wagonorb/wagon
+            - wagonorb/wagon_311
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
             - integration_tests_py3
@@ -125,12 +157,16 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - wagonorb/wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|main|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
@@ -141,10 +177,11 @@ workflows:
               only: /([0-9\.]*\-build|main|dev)/
       - integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
           requires:
             - wagonorb/wagon
+            - wagonorb/wagon_311
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
           filters:

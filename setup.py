@@ -37,9 +37,8 @@ setup(
     packages=['cloudify_tg', 'tg_sdk'],
     license='LICENSE',
     install_requires=[
-        "Pathlib",
         "cloudify-common>=6.4",
-        "cloudify-utilities-plugins-sdk>=0.0.61",
+        "cloudify-utilities-plugins-sdk>=0.0.127",
     ],
     test_requires=[]
 )

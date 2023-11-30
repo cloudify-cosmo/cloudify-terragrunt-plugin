@@ -131,3 +131,7 @@ dmypy.json
 test-template/*
 getting_started_template/*
 *wgn
+cloudify-utilities-plugins-sdk
+fusion-agent
+fusion-common
+fusion-manager

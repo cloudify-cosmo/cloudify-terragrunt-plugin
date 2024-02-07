@@ -1,0 +1,8 @@
+---
+project_exclusion_list:
+  exclusion_folders:
+    - .drp
+    - .github
+    - examples
+  exclusion_file_paths:
+    - Makefile

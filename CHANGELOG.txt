@@ -10,3 +10,4 @@
 0.0.7: add __version__.py file in cloudify_tg folder.
 0.0.8: Publish py311 wagon.
 0.0.9: Publish 1.5 DSL plugin YAML.
+0.0.10: added .drp folder for truffelhog checker.

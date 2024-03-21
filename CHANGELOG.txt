@@ -10,3 +10,5 @@
 0.0.7: add __version__.py file in cloudify_tg folder.
 0.0.8: Publish py311 wagon.
 0.0.9: Publish 1.5 DSL plugin YAML.
+0.0.10: add .drp folder for turfflehog.
+0.0.11: black duck dependancy updates.
